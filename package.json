@@ -14,6 +14,7 @@
   "scripts": {
     "build": "yarn tsc --declaration",
     "test": "yarn karma start karma.conf.ts",
+    "ci": "yarn lint --quiet && yarn test",
     "clean": "rm -rf *.log coverage build",
     "lint": "eslint \"./{lib,test}/**/*.ts\"",
     "format": "prettier-eslint --write --list-different \"./{lib,test,test-e2e}/**/*.{ts,js,json,md}\"",
@@ -123,8 +124,7 @@
       "yarn check-js"
     ],
     "*.{js,json,md}": [
-      "prettier-eslint --write",
-      "git add"
+      "prettier-eslint --write"
     ]
   },
   "browserify": {
