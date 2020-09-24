@@ -1,0 +1,15 @@
+.circleci
+.github
+node_modules
+test/**/*
+test-e2e/**/*
+steps_file.ts
+steps.d.ts
+.eslintrc
+.gitignore
+.nvmrc
+.prettierrc
+*.md
+karma.*
+Makefile
+tsconfig.json
