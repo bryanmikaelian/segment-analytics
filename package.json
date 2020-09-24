@@ -1,8 +1,8 @@
 {
-  "name": "@segment/analytics.js-core",
-  "author": "Segment <friends@segment.com>",
-  "version": "4.1.6",
-  "description": "The hassle-free way to integrate analytics into any web application.",
+  "name": "segment-analytics",
+  "author": "Bryan Mikaelian <bryan@iceblock.tech>",
+  "version": "1.0.0",
+  "description": "An enhanced version of Analytics.js.",
   "types": "lib/index.d.ts",
   "keywords": [
     "analytics",
@@ -12,7 +12,10 @@
   ],
   "main": "build/index.js",
   "scripts": {
-    "test": "make test",
+    "build": "yarn tsc --declaration",
+    "test": "yarn karma start karma.conf.ts",
+    "ci": "yarn lint --quiet && yarn test",
+    "clean": "rm -rf *.log coverage build",
     "lint": "eslint \"./{lib,test}/**/*.ts\"",
     "format": "prettier-eslint --write --list-different \"./{lib,test,test-e2e}/**/*.{ts,js,json,md}\"",
     "precommit": "lint-staged",
@@ -22,13 +25,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/segmentio/analytics.js-core"
+    "url": "https://github.com/bryanmikaelian/segment-analytics"
   },
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "MIT",
   "bugs": {
-    "url": "https://github.com/segmentio/analytics.js-core/issues"
+    "url": "https://github.com/bryanmikaelian/segment-analytics/issues"
   },
-  "homepage": "https://github.com/segmentio/analytics.js-core#readme",
+  "homepage": "https://github.com/bryanmikaelian/segment-analytics#readme",
   "dependencies": {
     "@segment/cookie": "^1.1.5",
     "@segment/is-meta": "^1.0.0",
@@ -121,8 +124,7 @@
       "yarn check-js"
     ],
     "*.{js,json,md}": [
-      "prettier-eslint --write",
-      "git add"
+      "prettier-eslint --write"
     ]
   },
   "browserify": {

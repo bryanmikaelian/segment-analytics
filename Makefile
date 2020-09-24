@@ -41,36 +41,6 @@ GREP ?= .
 # Tasks
 ##
 
-# Install dependencies.
-install:
-	yarn
-
-# Build typescript
-build: clean install
-	yarn tsc --declaration
-.PHONY: build
-
-# Remove temporary files and build artifacts.
-clean: test-e2e-clean
-	rm -rf *.log coverage build
-.PHONY: clean
-
-# Remove temporary files, build artifacts, and vendor dependencies.
-distclean: clean
-	rm -rf node_modules
-.PHONY: distclean
-
-# Lint JavaScript source files.
-lint: install
-	yarn lint
-
-.PHONY: lint
-
-# Attempt to fix linting errors.
-fmt: install
-	yarn format
-.PHONY: fmt
-
 # Run browser unit tests in a browser.
 test-browser: build
 	@$(KARMA) start $(KARMA_FLAGS) $(KARMA_CONF)
