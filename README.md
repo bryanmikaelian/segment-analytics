@@ -2,7 +2,7 @@
 
 ![NPM](https://img.shields.io/npm/l/segment-analytics?style=flat-square)
 ![npm](https://img.shields.io/npm/v/segment-analytics?style=flat-square)
-![GitHub Workflow Status](https://img.shields.io/github/workflow/status/bryanmikaelian/segment-analytics/TypeScript?style=flat-square)
+![GitHub Workflow Status](https://img.shields.io/github/workflow/status/bryanmikaelian/segment-analytics/ci?style=flat-square)
 
 This is a hard fork of the original library [`segmentio/analytics.js-core`](https://github.com/segmentio/analytics.js-core) which is the main driver behind [`segmentio/analytics.js`](https://github.com/segmentio/analytics.js).
 
