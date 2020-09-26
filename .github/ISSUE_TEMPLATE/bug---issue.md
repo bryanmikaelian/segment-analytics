@@ -1,7 +1,7 @@
 ---
 name: Bug / Issue
 about: A bug or issue you are having that can potentially be fixed in a single PR.
-title: ''
+title: "[BUG] {Your Title}"
 labels: bug
 assignees: ''
 
