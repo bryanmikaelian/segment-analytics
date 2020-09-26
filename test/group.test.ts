@@ -1,15 +1,10 @@
-'use strict';
+import { cookie, memory, store } from '../lib/legacy';
+import {default as g, Group } from '../lib/group'
 
-var Analytics = require('../build').constructor;
-var analytics = require('../build');
-var assert = require('proclaim');
-var sinon = require('sinon');
+import assert from 'proclaim'
+import sinon from 'sinon'
 
-var cookie = Analytics.cookie;
-var group = analytics.group();
-var Group = group.Group;
-var memory = Analytics.memory;
-var store = Analytics.store;
+let group = g
 
 describe('group', function() {
   var cookieKey = group._options.cookie.key;
@@ -80,7 +75,7 @@ describe('group', function() {
   describe('#id', function() {
     describe('when cookies are disabled', function() {
       beforeEach(function() {
-        sinon.stub(cookie, 'get', function() {});
+        sinon.stub(cookie, 'get');
         group = new Group();
       });
 
@@ -117,7 +112,7 @@ describe('group', function() {
 
     describe('when cookies and localStorage are disabled', function() {
       beforeEach(function() {
-        sinon.stub(cookie, 'get', function() {});
+        sinon.stub(cookie, 'get');
         store.enabled = false;
         group = new Group();
       });
@@ -332,8 +327,8 @@ describe('group', function() {
 
     it('should save properties', function() {
       group.identify(null, { property: true });
-      assert(group.properties(), { property: true });
-      assert(store.get(localStorageKey), { property: true });
+      assert.deepEqual(group.properties(), { property: true });
+      assert.deepEqual(store.get(localStorageKey), { property: true });
     });
 
     it('should save an id and properties', function() {

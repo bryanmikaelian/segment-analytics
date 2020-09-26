@@ -1,10 +1,15 @@
-import assignIn from 'lodash.assignin'
-import { pageDefaults} from '../build/pageDefaults';
 import assert from 'proclaim'
+import assignIn from 'lodash.assignin'
 
-var Analytics = require('../build').constructor;
+import { Analytics } from '../../lib/analytics';
+import cookie from '../../lib/cookie'
+import user from '../../lib/user'
+import group from '../../lib/group'
+import { pageDefaults} from '../../lib/pageDefaults';
+import { store as s, metrics as m } from '../../lib/legacy'
+
+
 var Facade = require('segmentio-facade');
-var analytics = require('../build');
 var bind = require('component-event').bind;
 var createIntegration = require('@segment/analytics.js-integration');
 var type = require('component-type');
@@ -13,11 +18,8 @@ var tick = require('next-tick');
 var trigger = require('compat-trigger-event');
 
 var Identify = Facade.Identify;
-var cookie = Analytics.cookie;
-var group = analytics.group();
-var store = Analytics.store;
-var user = analytics.user();
-var metrics = Analytics.metrics;
+var store = s;
+var metrics = m;
 
 describe('Analytics', function() {
   var analytics;

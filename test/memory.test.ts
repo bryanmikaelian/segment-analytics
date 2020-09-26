@@ -1,7 +1,5 @@
-'use strict';
-
-var assert = require('proclaim');
-var memory = require('../build').constructor.memory;
+import assert from 'proclaim'
+import { memory } from '../lib/legacy'
 
 describe('memory', function() {
   afterEach(function() {

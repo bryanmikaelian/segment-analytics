@@ -8,7 +8,8 @@ import assignIn from 'lodash.assignin'
  * Module dependencies.
  */
 
-var cookie = require('./cookie');
+import cookie from './cookie'
+
 var debug = require('debug')('analytics:entity');
 var memory = require('./memory');
 var store = require('./store');

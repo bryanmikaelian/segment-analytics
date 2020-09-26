@@ -1,7 +1,7 @@
 'use strict';
 
 var assert = require('proclaim');
-var normalize = require('../build/normalize');
+var normalize = require('../build/lib/normalize');
 
 describe('normalize', function() {
   var list = ['Segment', 'KISSmetrics'];

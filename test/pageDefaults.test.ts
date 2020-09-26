@@ -1,11 +1,9 @@
-import { pageDefaults }  from '../build/pageDefaults'
+import { pageDefaults }  from '../lib/pageDefaults'
 import * as assert from 'proclaim'
 import * as sinon from 'sinon'
 
 const el = document.createElement("link")
 el.setAttribute("rel", "canonical")
-
-const loc = window.location
 
 describe('pageDefaults', () => {
   before(() => {

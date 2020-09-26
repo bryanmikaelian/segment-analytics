@@ -870,6 +870,11 @@
   resolved "https://registry.yarnpkg.com/@types/http-cache-semantics/-/http-cache-semantics-4.0.0.tgz#9140779736aa2655635ee756e2467d787cfe8a2a"
   integrity sha512-c3Xy026kOF7QOTn00hbIllV1dLR9hG9NkSrLQgCVs8NF6sBU+VGWjD3wLPhmh1TYAc7ugCFsvHYMN4VcBN1U1A==
 
+"@types/is@^0.0.21":
+  version "0.0.21"
+  resolved "https://registry.yarnpkg.com/@types/is/-/is-0.0.21.tgz#1f4b0afe428991564abbd890844eba2458bc83e6"
+  integrity sha512-j2v73mj4I47lOaA8r+5tknsgsqlRPDN224sS0Y7ORzlx3AXxqL6RhK/BRhEMP98RJIVW7WTnXZ9ZqQSNdWWuwg==
+
 "@types/jquery@^3.5.1":
   version "3.5.1"
   resolved "https://registry.yarnpkg.com/@types/jquery/-/jquery-3.5.1.tgz#cebb057acf5071c40e439f30e840c57a30d406c3"
