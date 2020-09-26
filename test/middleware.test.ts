@@ -1,11 +1,7 @@
 import assert from 'proclaim'
+import Facade from 'segmentio-facade'
 
-const Facade = require('segmentio-facade');
-const SourceMiddlewareChain = require('../build/lib/middleware')
-  .SourceMiddlewareChain;
-const IntegrationMiddlewareChain = require('../build/lib/middleware')
-  .IntegrationMiddlewareChain;
-const middlewareChain = require('../build/lib/middleware').middlewareChain;
+import { middlewareChain, SourceMiddlewareChain, IntegrationMiddlewareChain } from '../lib/middleware';
 
 describe('middlewareChain', function() {
   var chain;
