@@ -1,16 +1,11 @@
-'use strict';
+import assert from 'proclaim'
+import sinon from 'sinon'
+import rawCookie from '@segment/cookie'
 
-var assert = require('proclaim');
-var rawCookie = require('@segment/cookie');
-var sinon = require('sinon');
-var analytics = require('../build');
-var Analytics = require('../build').constructor;
+import { cookie, store, memory } from '../lib/legacy'
+import { default as u, User } from '../lib/user'
 
-var cookie = Analytics.cookie;
-var store = Analytics.store;
-var memory = Analytics.memory;
-var user = analytics.user();
-var User = user.User;
+let user = u
 
 describe('user', function() {
   var cookieKey = user._options.cookie.key;
@@ -105,7 +100,7 @@ describe('user', function() {
   describe('#id', function() {
     describe('when cookies are disabled', function() {
       beforeEach(function() {
-        sinon.stub(cookie, 'get', function() {});
+        sinon.stub(cookie, 'get');
         user = new User();
       });
 
@@ -166,7 +161,7 @@ describe('user', function() {
 
     describe('when cookies and localStorage are disabled', function() {
       beforeEach(function() {
-        sinon.stub(cookie, 'get', function() {});
+        sinon.stub(cookie, 'get');
         store.enabled = false;
         user = new User();
       });
@@ -282,7 +277,7 @@ describe('user', function() {
 
     describe('when cookies are disabled', function() {
       beforeEach(function() {
-        sinon.stub(cookie, 'get', function() {});
+        sinon.stub(cookie, 'get');
         user = new User();
       });
 
@@ -310,7 +305,7 @@ describe('user', function() {
 
     describe('when cookies and localStorage are disabled', function() {
       beforeEach(function() {
-        sinon.stub(cookie, 'get', function() {});
+        sinon.stub(cookie, 'get');
         store.enabled = false;
         user = new User();
       });
@@ -472,7 +467,7 @@ describe('user', function() {
 
     it('should set traits', function() {
       user.traits({ trait: true });
-      assert(store.get(localStorageKey), { trait: true });
+      assert.deepEqual(store.get(localStorageKey), { trait: true });
     });
 
     it('should set the id when not persisting', function() {
@@ -545,7 +540,7 @@ describe('user', function() {
     it('should save traits to local storage', function() {
       user.traits({ trait: true });
       user.save();
-      assert(store.get(localStorageKey), { trait: true });
+      assert.deepEqual(store.get(localStorageKey), { trait: true });
     });
 
     it('shouldnt save if persist is false', function() {
@@ -564,7 +559,7 @@ describe('user', function() {
       user.logout();
       assert(cookie.get('ajs_anonymous_id') === null);
       assert(user.id() === null);
-      assert(user.traits(), {});
+      assert.deepEqual(user.traits(), {});
     });
 
     it('should clear id in cookie', function() {

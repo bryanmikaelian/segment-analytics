@@ -45,10 +45,12 @@ inherit(Group, Entity);
  * Expose the group singleton.
  */
 
-module.exports = bindAll(new Group());
+export default bindAll(new Group());
 
 /**
  * Expose the `Group` constructor.
  */
 
-module.exports.Group = Group;
+export {
+  Group
+}

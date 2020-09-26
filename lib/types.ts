@@ -14,17 +14,6 @@ export interface SegmentAnalytics {
   ) => void
 
   // Private fields
-  _options: (options: Object) => void
-  _sourceMiddlewares:  unknown
-  _integrationMiddlewares: unknown
-  _destinationMiddlewares: unknown
-  _integrations: unknown
-  _readied: boolean
-  _timeout: number
-  _user: unknown
-  log: (args: string) => void
-  on: (event: string, callback: (settings: unknown, options: InitOptions) => void) => void
-  _parseQuery: (queryString: string) => void
 }
 
 export interface IntegrationsSettings {

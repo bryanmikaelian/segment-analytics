@@ -1,1071 +1,127 @@
-'use strict';
+import { debug } from 'debug';
+import Emitter from 'component-emitter';
 
+import { version } from '../package.json';
 import {
-  IntegrationsSettings,
   InitOptions,
+  IntegrationsSettings,
+  PageDefaults,
   SegmentAnalytics,
-  SegmentOpts,
   SegmentIntegration,
-  PageDefaults, Message
+  SegmentOpts
 } from './types';
+import { SourceMiddlewareChain, IntegrationMiddlewareChain } from './middleware';
+import user from './user';
 
-import { pageDefaults } from './pageDefaults';
+export class Analytics extends Emitter {
+  public readonly VERSION: string;
+  public readonly log: (args: string) => void;
+  public readonly Integrations: { [name: string]: (options: SegmentOpts) => void };
+  public options: SegmentOpts;
 
-import cloneDeep from 'lodash.clonedeep'
-import pick from 'lodash.pick'
+  private _sourceMiddlewares: unknown;
+  private _integrationMiddlewares: unknown;
+  private _destinationMiddlewares: unknown;
+  private _integrations: unknown;
+  private _readied: boolean;
+  private _timeout: number;
+  private _user: unknown;
 
-var _analytics = global.analytics;
+  // TODO: These functions are all prototyped in legacy/index.ts.  Eventually migrate them to here
 
-/*
- * Module dependencies.
- */
+  // The initialize functions
+  init: (settings?: IntegrationsSettings, options?: InitOptions) => SegmentAnalytics;
+  initialize: (settings?: IntegrationsSettings, options?: InitOptions) => SegmentAnalytics;
 
-var Alias = require('segmentio-facade').Alias;
-var Emitter = require('component-emitter');
-var Facade = require('segmentio-facade');
-var Group = require('segmentio-facade').Group;
-var Identify = require('segmentio-facade').Identify;
-var SourceMiddlewareChain = require('./middleware').SourceMiddlewareChain;
-var IntegrationMiddlewareChain = require('./middleware')
-  .IntegrationMiddlewareChain;
-var DestinationMiddlewareChain = require('./middleware')
-  .DestinationMiddlewareChain;
-var Page = require('segmentio-facade').Page;
-var Track = require('segmentio-facade').Track;
-var bindAll = require('bind-all');
-var extend = require('extend');
-var cookie = require('./cookie');
-var metrics = require('./metrics');
-var debug = require('debug');
-var defaults = require('@ndhoule/defaults');
-var group = require('./group');
-var is = require('is');
-var isMeta = require('@segment/is-meta');
-var memory = require('./memory');
-var nextTick = require('next-tick');
-var normalize = require('./normalize');
-var on = require('component-event').bind;
-var prevent = require('@segment/prevent-default');
-var querystring = require('component-querystring');
-var store = require('./store');
-var user = require('./user');
-var type = require('component-type');
+  // The core Segment functions
+  track: (
+    event: string,
+    properties?: unknown,
+    options?: unknown,
+    fn?: unknown
+  ) => SegmentAnalytics
 
-/**
- * Initialize a new `Analytics` instance.
- */
+  page: (
+    category?: string,
+    name?: string,
+    properties?: any,
+    options?: any,
+    fn?: unknown
+  ) => SegmentAnalytics;
 
-function Analytics() {
-  this._options({});
-  this.Integrations = {};
-  this._sourceMiddlewares = new SourceMiddlewareChain();
-  this._integrationMiddlewares = new IntegrationMiddlewareChain();
-  this._destinationMiddlewares = {};
-  this._integrations = {};
-  this._readied = false;
-  this._timeout = 300;
-  // XXX: BACKWARDS COMPATIBILITY
-  this._user = user;
-  this.log = debug('analytics.js');
-  bindAll(this);
+  identify: (
+    id?: string,
+    traits?: unknown,
+    options?: SegmentOpts,
+    fn?: Function | SegmentOpts
+  ) => SegmentAnalytics;
 
+  group: (
+    id: string,
+    traits?: unknown,
+    options?: unknown,
+    fn?: unknown
+  ) => SegmentAnalytics;
 
-  const self = this;
-  this.on('initialize', function(_, options) {
-    if (options.initialPageview) self.page();
-    self._parseQuery(window.location.search);
-  });
+  alias: (
+    to: string,
+    from?: string,
+    options?: unknown,
+    fn?: unknown
+  ) => SegmentAnalytics
+
+  // Random util functions
+
+  use: (plugin: (analytics: SegmentAnalytics) => void) => SegmentAnalytics;
+  addIntegration: (Integration: (options: SegmentOpts) => void) => SegmentAnalytics;
+  addSourceMiddleware: (middleware: Function) => SegmentAnalytics;
+  addIntegrationMiddleware: (middleware: Function) => SegmentAnalytics;
+  addDestinationMiddleware: (integrationName: string, middlewares: Array<unknown>) => SegmentAnalytics;
+  setAnonymousId: (id: string) => SegmentAnalytics;
+  add: (integration: { name: string | number }) => SegmentAnalytics;
+  user: () => object;
+  pageview: (url: string) => SegmentAnalytics
+  ready: (fn: Function) => SegmentAnalytics
+  timeout: (timeout: number) => void
+  debug: (str: string | boolean) => void
+  reset: () => void
+  normalize: (msg: {
+    options: { [key: string]: unknown },
+    context: { page: Partial<PageDefaults> },
+    anonymousId: string
+  }) => object;
+  noConflict: () => SegmentAnalytics
+  trackClick: (forms: Element | Array<unknown> | JQuery, event: any, properties?: any) => SegmentAnalytics
+  trackLink: (forms: Element | Array<unknown> | JQuery, event: any, properties?: any) => SegmentAnalytics
+  trackSubmit: (forms: Element | Array<unknown>, event: any, properties?: any) => SegmentAnalytics
+  trackForm: (forms: Element | Array<unknown>, event: any, properties?: any) => SegmentAnalytics
+  push: (args: any[]) => void
+
+  _mergeInitializeAndPlanIntegrations: (planIntegrations: SegmentIntegration) => object;
+  _options: (opts: InitOptions) => SegmentAnalytics
+  _callback: (fn: Function) => SegmentAnalytics
+  _invoke: (method: string, facade: unknown) => SegmentAnalytics
+  _parseQuery: (query: string) => SegmentAnalytics
+
+  constructor() {
+    super();
+
+    this.VERSION = version;
+    this._options({});
+    this.Integrations = {};
+    this._sourceMiddlewares = new SourceMiddlewareChain();
+    this._integrationMiddlewares = new IntegrationMiddlewareChain();
+    this._destinationMiddlewares = {};
+    this._integrations = {};
+    this._readied = false;
+    this._timeout = 300;
+    // XXX: BACKWARDS COMPATIBILITY
+    this._user = user;
+    this.log = debug('analytics.js');
+
+    this.on('initialize', (_, options) => {
+      if (options.initialPageview) this.page();
+      this._parseQuery(window.location.search);
+    });
+  }
 }
-
-/**
- * Mix in event emitter.
- */
-
-Emitter(Analytics.prototype);
-
-/**
- * Use a `plugin`.
- */
-
-Analytics.prototype.use = function(
-  plugin: (analytics: SegmentAnalytics) => void
-): SegmentAnalytics {
-  plugin(this);
-  return this;
-};
-
-/**
- * Define a new `Integration`.
- */
-
-Analytics.prototype.addIntegration = function(
-  Integration: (options: SegmentOpts) => void
-): SegmentAnalytics {
-  var name = Integration.prototype.name;
-  if (!name) throw new TypeError('attempted to add an invalid integration');
-  this.Integrations[name] = Integration;
-  return this;
-};
-
-/**
- * Define a new `SourceMiddleware`
- */
-
-Analytics.prototype.addSourceMiddleware = function(
-  middleware: Function
-): SegmentAnalytics {
-  this._sourceMiddlewares.add(middleware);
-  return this;
-};
-
-/**
- * Define a new `IntegrationMiddleware`
- * @deprecated
- */
-
-Analytics.prototype.addIntegrationMiddleware = function(
-  middleware: Function
-): SegmentAnalytics {
-  this._integrationMiddlewares.add(middleware);
-  return this;
-};
-
-/**
- * Define a new `DestinationMiddleware`
- * Destination Middleware is chained after integration middleware
- */
-
-Analytics.prototype.addDestinationMiddleware = function(
-  integrationName: string,
-  middlewares: Array<unknown>
-): SegmentAnalytics {
-  var self = this;
-  middlewares.forEach(function(middleware) {
-    if (!self._destinationMiddlewares[integrationName]) {
-      self._destinationMiddlewares[
-        integrationName
-      ] = new DestinationMiddlewareChain();
-    }
-
-    self._destinationMiddlewares[integrationName].add(middleware);
-  });
-  return self;
-};
-
-/**
- * Initialize with the given integration `settings` and `options`.
- *
- * Aliased to `init` for convenience.
- */
-
-Analytics.prototype.init = Analytics.prototype.initialize = function(
-  settings?: IntegrationsSettings,
-  options?: InitOptions
-): SegmentAnalytics {
-  settings = settings || {};
-  options = options || {};
-
-  this._options(options);
-  this._readied = false;
-
-  // clean unknown integrations from settings
-  var self = this;
-  Object.keys(settings).forEach(key => {
-    var Integration = self.Integrations[key];
-    if (!Integration) delete settings[key];
-  });
-
-  // add integrations
-  Object.keys(settings).forEach(key => {
-    const opts = settings[key]
-    const name = key
-
-    // Don't load disabled integrations
-    if (options.integrations) {
-      if (
-        options.integrations[name] === false ||
-        (options.integrations.All === false && !options.integrations[name])
-      ) {
-        return;
-      }
-    }
-
-    const Integration = self.Integrations[name];
-    const clonedOpts = {};
-    extend(true, clonedOpts, opts); // deep clone opts
-    const integration = new Integration(clonedOpts);
-    self.log('initialize %o - %o', name, opts);
-    self.add(integration);
-  });
-
-  var integrations = this._integrations;
-
-  // load user now that options are set
-  user.load();
-  group.load();
-
-  // make ready callback
-  var readyCallCount = 0;
-  var integrationCount = Object.keys(integrations).length;
-  var ready = function() {
-    readyCallCount++;
-    if (readyCallCount >= integrationCount) {
-      self._readied = true;
-      self.emit('ready');
-    }
-  };
-
-  // init if no integrations
-  if (integrationCount <= 0) {
-    ready();
-  }
-
-  // initialize integrations, passing ready
-  // create a list of any integrations that did not initialize - this will be passed with all events for replay support:
-  this.failedInitializations = [];
-  let initialPageSkipped = false;
-  Object.keys(integrations).forEach(key => {
-    const integration = integrations[key]
-    if (
-      options.initialPageview &&
-      integration.options.initialPageview === false
-    ) {
-      // We've assumed one initial pageview, so make sure we don't count the first page call.
-      let page = integration.page;
-      integration.page = function() {
-        if (initialPageSkipped) {
-          return page.apply(this, arguments);
-        }
-        initialPageSkipped = true;
-        return;
-      };
-    }
-
-    integration.analytics = self;
-
-    integration.once('ready', ready);
-    try {
-      metrics.increment('analytics_js.integration.invoke', {
-        method: 'initialize',
-        integration_name: integration.name
-      });
-      integration.initialize();
-    } catch (e) {
-      let integrationName = integration.name;
-      metrics.increment('analytics_js.integration.invoke.error', {
-        method: 'initialize',
-        integration_name: integration.name
-      });
-      self.failedInitializations.push(integrationName);
-      self.log('Error initializing %s integration: %o', integrationName, e);
-      // Mark integration as ready to prevent blocking of anyone listening to analytics.ready()
-
-      integration.ready();
-    }
-  });
-
-  // backwards compat with angular plugin and used for init logic checks
-  this.initialized = true;
-
-  this.emit('initialize', settings, options);
-  return this;
-};
-
-/**
- * Set the user's `id`.
- */
-
-Analytics.prototype.setAnonymousId = function(id: string): SegmentAnalytics {
-  this.user().anonymousId(id);
-  return this;
-};
-
-/**
- * Add an integration.
- */
-
-Analytics.prototype.add = function(integration: {
-  name: string | number;
-}): SegmentAnalytics {
-  this._integrations[integration.name] = integration;
-  return this;
-};
-
-/**
- * Identify a user by optional `id` and `traits`.
- *
- * @param {string} [id=user.id()] User ID.
- * @param {Object} [traits=null] User traits.
- * @param {Object} [options=null]
- * @param {Function} [fn]
- * @return {Analytics}
- */
-
-Analytics.prototype.identify = function(
-  id?: string,
-  traits?: unknown,
-  options?: SegmentOpts,
-  fn?: Function | SegmentOpts
-): SegmentAnalytics {
-  // Argument reshuffling.
-  /* eslint-disable no-unused-expressions, no-sequences */
-  if (is.fn(options)) (fn = options), (options = null);
-  if (is.fn(traits)) (fn = traits), (options = null), (traits = null);
-  if (is.object(id)) (options = traits), (traits = id), (id = user.id());
-  /* eslint-enable no-unused-expressions, no-sequences */
-
-  // clone traits before we manipulate so we don't do anything uncouth, and take
-  // from `user` so that we carryover anonymous traits
-  user.identify(id, traits);
-
-  var msg = this.normalize({
-    options: options,
-    traits: user.traits(),
-    userId: user.id()
-  });
-
-  // Add the initialize integrations so the server-side ones can be disabled too
-  // NOTE: We need to merge integrations, not override them with assign
-  // since it is possible to change the initialized integrations at runtime.
-  if (this.options.integrations) {
-    msg.integrations = {
-      ...this.options.integrations,
-      ...msg.integrations
-    }
-  }
-
-  this._invoke('identify', new Identify(msg));
-
-  // emit
-  this.emit('identify', id, traits, options);
-  this._callback(fn);
-  return this;
-};
-
-/**
- * Return the current user.
- *
- * @return {Object}
- */
-
-Analytics.prototype.user = function(): object {
-  return user;
-};
-
-/**
- * Identify a group by optional `id` and `traits`. Or, if no arguments are
- * supplied, return the current group.
- *
- * @param {string} [id=group.id()] Group ID.
- * @param {Object} [traits=null] Group traits.
- * @param {Object} [options=null]
- * @param {Function} [fn]
- * @return {Analytics|Object}
- */
-
-Analytics.prototype.group = function(
-  id: string,
-  traits?: unknown,
-  options?: unknown,
-  fn?: unknown
-): SegmentAnalytics {
-  /* eslint-disable no-unused-expressions, no-sequences */
-  if (!arguments.length) return group;
-  if (is.fn(options)) (fn = options), (options = null);
-  if (is.fn(traits)) (fn = traits), (options = null), (traits = null);
-  if (is.object(id)) (options = traits), (traits = id), (id = group.id());
-  /* eslint-enable no-unused-expressions, no-sequences */
-
-  // grab from group again to make sure we're taking from the source
-  group.identify(id, traits);
-
-  var msg = this.normalize({
-    options: options,
-    traits: group.traits(),
-    groupId: group.id()
-  });
-
-  // Add the initialize integrations so the server-side ones can be disabled too
-  // NOTE: We need to merge integrations, not override them with assign
-  // since it is possible to change the initialized integrations at runtime.
-  if (this.options.integrations) {
-    msg.integrations = {
-      ...this.options.integrations,
-      ...msg.integrations
-    }
-  }
-
-  this._invoke('group', new Group(msg));
-
-  this.emit('group', id, traits, options);
-  this._callback(fn);
-  return this;
-};
-
-/**
- * Track an `event` that a user has triggered with optional `properties`.
- *
- * @param {string} event
- * @param {Object} [properties=null]
- * @param {Object} [options=null]
- * @param {Function} [fn]
- * @return {Analytics}
- */
-
-Analytics.prototype.track = function(
-  event: string,
-  properties?: unknown,
-  options?: unknown,
-  fn?: unknown
-): SegmentAnalytics {
-  // Argument reshuffling.
-  /* eslint-disable no-unused-expressions, no-sequences */
-  if (is.fn(options)) (fn = options), (options = null);
-  if (is.fn(properties))
-    (fn = properties), (options = null), (properties = null);
-  /* eslint-enable no-unused-expressions, no-sequences */
-
-  // figure out if the event is archived.
-  var plan = this.options.plan || {};
-  var events = plan.track || {};
-  var planIntegrationOptions = {};
-
-  // normalize
-  var msg = this.normalize({
-    properties: properties,
-    options: options,
-    event: event
-  });
-
-  // plan.
-  plan = events[event];
-  if (plan) {
-    this.log('plan %o - %o', event, plan);
-    if (plan.enabled === false) {
-      // Disabled events should always be sent to Segment.
-      planIntegrationOptions = { All: false, 'Segment.io': true };
-    } else {
-      planIntegrationOptions = plan.integrations || {};
-    }
-  } else {
-    var defaultPlan = events.__default || { enabled: true };
-    if (!defaultPlan.enabled) {
-      // Disabled events should always be sent to Segment.
-      planIntegrationOptions = { All: false, 'Segment.io': true };
-    }
-  }
-
-  // Add the initialize integrations so the server-side ones can be disabled too
-  // NOTE: We need to merge integrations, not override them with assign
-  // since it is possible to change the initialized integrations at runtime.
-  msg.integrations = {
-    ...this._mergeInitializeAndPlanIntegrations(planIntegrationOptions),
-    ...msg.integrations
-  }
-
-  this._invoke('track', new Track(msg));
-
-  this.emit('track', event, properties, options);
-  this._callback(fn);
-  return this;
-};
-
-/**
- * Helper method to track an outbound link that would normally navigate away
- * from the page before the analytics calls were sent.
- *
- * BACKWARDS COMPATIBILITY: aliased to `trackClick`.
- *
- * @param {Element|Array} links
- * @param {string|Function} event
- * @param {Object|Function} properties (optional)
- * @return {Analytics}
- */
-
-Analytics.prototype.trackClick = Analytics.prototype.trackLink = function(
-  links: Element | Array<Element> | JQuery,
-  event: any,
-  properties?: any
-): SegmentAnalytics {
-  let elements: Array<Element> = []
-  if (!links) return this;
-  // always arrays, handles jquery
-  if (links instanceof Element) {
-    elements = [links]
-  } else if ("toArray" in links) {
-    elements = links.toArray()
-  } else {
-    elements = links as Array<Element>
-  }
-
-  elements.forEach(el => {
-    if (type(el) !== 'element') {
-      throw new TypeError('Must pass HTMLElement to `analytics.trackLink`.');
-    }
-    on(el, 'click', (e) => {
-      const ev = is.fn(event) ? event(el) : event;
-      const props = is.fn(properties) ? properties(el) : properties;
-      const href =
-        el.getAttribute('href') ||
-        el.getAttributeNS('http://www.w3.org/1999/xlink', 'href') ||
-        el.getAttribute('xlink:href');
-
-      this.track(ev, props);
-
-      // @ts-ignore
-      if (href && el.target !== '_blank' && !isMeta(e)) {
-        prevent(e);
-        this._callback(function() {
-          window.location.href = href;
-        });
-      }
-    });
-  });
-
-  return this;
-};
-
-/**
- * Helper method to track an outbound form that would normally navigate away
- * from the page before the analytics calls were sent.
- *
- * BACKWARDS COMPATIBILITY: aliased to `trackSubmit`.
- *
- * @param {Element|Array} forms
- * @param {string|Function} event
- * @param {Object|Function} properties (optional)
- * @return {Analytics}
- */
-
-Analytics.prototype.trackSubmit = Analytics.prototype.trackForm = function(
-  forms: Element | Array<unknown>,
-  event: any,
-  properties?: any
-): SegmentAnalytics {
-  if (!forms) return this;
-  // always arrays, handles jquery
-  if (type(forms) === 'element') forms = [forms];
-
-  const elements = forms as Array<unknown>
-
-  elements.forEach((el: { submit: () => void }) => {
-    if (type(el) !== 'element')
-      throw new TypeError('Must pass HTMLElement to `analytics.trackForm`.');
-    const handler = (e) => {
-      prevent(e);
-
-      const ev = is.fn(event) ? event(el) : event;
-      const props = is.fn(properties) ? properties(el) : properties;
-      this.track(ev, props);
-
-      this._callback(function() {
-        el.submit();
-      });
-    }
-
-    // Support the events happening through jQuery or Zepto instead of through
-    // the normal DOM API, because `el.submit` doesn't bubble up events...
-    var $ = window.jQuery || window.Zepto;
-    if ($) {
-      $(el).submit(handler);
-    } else {
-      on(el, 'submit', handler);
-    }
-  });
-
-  return this;
-};
-
-/**
- * Trigger a pageview, labeling the current page with an optional `category`,
- * `name` and `properties`.
- *
- * @param {string} [category]
- * @param {string} [name]
- * @param {Object|string} [properties] (or path)
- * @param {Object} [options]
- * @param {Function} [fn]
- * @return {Analytics}
- */
-
-Analytics.prototype.page = function(
-  category?: string,
-  name?: string,
-  properties?: any,
-  options?: any,
-  fn?: unknown
-): SegmentAnalytics {
-  // Argument reshuffling.
-  /* eslint-disable no-unused-expressions, no-sequences */
-  if (is.fn(options)) (fn = options), (options = null);
-  if (is.fn(properties)) (fn = properties), (options = properties = null);
-  if (is.fn(name)) (fn = name), (options = properties = name = null);
-  if (type(category) === 'object')
-    (options = name), (properties = category), (name = category = null);
-  if (type(name) === 'object')
-    (options = properties), (properties = name), (name = null);
-  if (type(category) === 'string' && type(name) !== 'string')
-    (name = category), (category = null);
-  /* eslint-enable no-unused-expressions, no-sequences */
-
-  properties = cloneDeep(properties) || {};
-  if (name) properties.name = name;
-  if (category) properties.category = category;
-
-  // Ensure properties has baseline spec properties.
-  // TODO: Eventually move these entirely to `options.context.page`
-  // FIXME: This is purposely not overriding `defs`. There was a bug in the logic implemented by `@ndhoule/defaults`.
-  //        This bug made it so we only would overwrite values in `defs` that were set to `undefined`.
-  //        In some cases, though, pageDefaults  will return defaults with values set to "" (such as `window.location.search` defaulting to "").
-  //        The decision to not fix this bus was made to preserve backwards compatibility.
-  const defs = pageDefaults()
-  properties = {
-    ...properties,
-    ...defs
-  }
-
-  // Mirror user overrides to `options.context.page` (but exclude custom properties)
-  // (Any page defaults get applied in `this.normalize` for consistency.)
-  // Weird, yeah--moving special props to `context.page` will fix this in the long term.
-  const overrides = pick(properties, Object.keys(defs));
-  if (!is.empty(overrides)) {
-    options = options || {};
-    options.context = options.context || {};
-    options.context.page = overrides;
-  }
-
-  const msg = this.normalize({
-    properties: properties,
-    category: category,
-    options: options,
-    name: name
-  });
-
-  // Add the initialize integrations so the server-side ones can be disabled too
-  // NOTE: We need to merge integrations, not override them with assign
-  // since it is possible to change the initialized integrations at runtime.
-  if (this.options.integrations) {
-    msg.integrations = {
-      ...this.options.integrations,
-      ...msg.integrations
-    }
-  }
-
-  this._invoke('page', new Page(msg));
-
-  this.emit('page', category, name, properties, options);
-  this._callback(fn);
-  return this;
-};
-
-/**
- * FIXME: BACKWARDS COMPATIBILITY: convert an old `pageview` to a `page` call.
- * @api private
- */
-
-Analytics.prototype.pageview = function(url: string): SegmentAnalytics {
-  const properties: { path?: string } = {};
-  if (url) properties.path = url;
-  this.page(properties);
-  return this;
-};
-
-/**
- * Merge two previously unassociated user identities.
- *
- * @param {string} to
- * @param {string} from (optional)
- * @param {Object} options (optional)
- * @param {Function} fn (optional)
- * @return {Analytics}
- */
-
-Analytics.prototype.alias = function(
-  to: string,
-  from?: string,
-  options?: unknown,
-  fn?: unknown
-): SegmentAnalytics {
-  // Argument reshuffling.
-  /* eslint-disable no-unused-expressions, no-sequences */
-  if (is.fn(options)) (fn = options), (options = null);
-  if (is.fn(from)) (fn = from), (options = null), (from = null);
-  if (is.object(from)) (options = from), (from = null);
-  /* eslint-enable no-unused-expressions, no-sequences */
-
-  var msg = this.normalize({
-    options: options,
-    previousId: from,
-    userId: to
-  });
-
-  // Add the initialize integrations so the server-side ones can be disabled too
-  // NOTE: We need to merge integrations, not override them with assign
-  // since it is possible to change the initialized integrations at runtime.
-  if (this.options.integrations) {
-    msg.integrations = {
-      ...this.options.integrations,
-      ...msg.integrations
-    }
-  }
-
-  this._invoke('alias', new Alias(msg));
-
-  this.emit('alias', to, from, options);
-  this._callback(fn);
-  return this;
-};
-
-/**
- * Register a `fn` to be fired when all the analytics services are ready.
- */
-
-Analytics.prototype.ready = function(fn: Function): SegmentAnalytics {
-  if (is.fn(fn)) {
-    if (this._readied) {
-      nextTick(fn);
-    } else {
-      this.once('ready', fn);
-    }
-  }
-  return this;
-};
-
-/**
- * Set the `timeout` (in milliseconds) used for callbacks.
- */
-
-Analytics.prototype.timeout = function(timeout: number) {
-  this._timeout = timeout;
-};
-
-/**
- * Enable or disable debug.
- */
-
-Analytics.prototype.debug = function(str: string | boolean) {
-  if (!arguments.length || str) {
-    debug.enable('analytics:' + (str || '*'));
-  } else {
-    debug.disable();
-  }
-};
-
-/**
- * Apply options.
- * @api private
- */
-
-Analytics.prototype._options = function(
-  options: InitOptions
-): SegmentAnalytics {
-  options = options || {};
-  this.options = options;
-  cookie.options(options.cookie);
-  metrics.options(options.metrics);
-  store.options(options.localStorage);
-  user.options(options.user);
-  group.options(options.group);
-  return this;
-};
-
-/**
- * Callback a `fn` after our defined timeout period.
- * @api private
- */
-
-Analytics.prototype._callback = function(fn: Function): SegmentAnalytics {
-  if (is.fn(fn)) {
-    this._timeout ? setTimeout(fn, this._timeout) : nextTick(fn);
-  }
-  return this;
-};
-
-/**
- * Call `method` with `facade` on all enabled integrations.
- *
- * @param {string} method
- * @param {Facade} facade
- * @return {Analytics}
- * @api private
- */
-
-Analytics.prototype._invoke = function(
-  method: string,
-  facade: unknown
-): SegmentAnalytics {
-  var self = this;
-
-  try {
-    this._sourceMiddlewares.applyMiddlewares(
-      extend(true, new Facade({}), facade),
-      this._integrations,
-      function(result) {
-        // A nullified payload should not be sent.
-        if (result === null) {
-          self.log(
-            'Payload with method "%s" was null and dropped by source a middleware.',
-            method
-          );
-          return;
-        }
-
-        // Check if the payload is still a Facade. If not, convert it to one.
-        if (!(result instanceof Facade)) {
-          result = new Facade(result);
-        }
-
-        self.emit('invoke', result);
-        metrics.increment('analytics_js.invoke', {
-          method: method
-        });
-
-        applyIntegrationMiddlewares(result);
-      }
-    );
-  } catch (e) {
-    metrics.increment('analytics_js.invoke.error', {
-      method: method
-    });
-    self.log(
-      'Error invoking .%s method of %s integration: %o',
-      method,
-      name,
-      e
-    );
-  }
-
-  return this;
-
-  function applyIntegrationMiddlewares(facade) {
-    let failedInitializations = self.failedInitializations || [];
-    Object.keys(self._integrations).forEach(key => {
-      const integration = self._integrations[key]
-      const { name } = integration
-      const facadeCopy = extend(true, new Facade({}), facade);
-
-      if (!facadeCopy.enabled(name)) return;
-      // Check if an integration failed to initialize.
-      // If so, do not process the message as the integration is in an unstable state.
-      if (failedInitializations.indexOf(name) >= 0) {
-        self.log(
-          'Skipping invocation of .%s method of %s integration. Integration failed to initialize properly.',
-          method,
-          name
-        );
-      } else {
-        try {
-          // Apply any integration middlewares that exist, then invoke the integration with the result.
-          self._integrationMiddlewares.applyMiddlewares(
-            facadeCopy,
-            integration.name,
-            function(result) {
-              // A nullified payload should not be sent to an integration.
-              if (result === null) {
-                self.log(
-                  'Payload to integration "%s" was null and dropped by a middleware.',
-                  name
-                );
-                return;
-              }
-
-              // Check if the payload is still a Facade. If not, convert it to one.
-              if (!(result instanceof Facade)) {
-                result = new Facade(result);
-              }
-
-              // apply destination middlewares
-              // Apply any integration middlewares that exist, then invoke the integration with the result.
-              if (self._destinationMiddlewares[integration.name]) {
-                self._destinationMiddlewares[integration.name].applyMiddlewares(
-                  facadeCopy,
-                  integration.name,
-                  function(result) {
-                    // A nullified payload should not be sent to an integration.
-                    if (result === null) {
-                      self.log(
-                        'Payload to destination "%s" was null and dropped by a middleware.',
-                        name
-                      );
-                      return;
-                    }
-
-                    // Check if the payload is still a Facade. If not, convert it to one.
-                    if (!(result instanceof Facade)) {
-                      result = new Facade(result);
-                    }
-
-                    metrics.increment('analytics_js.integration.invoke', {
-                      method: method,
-                      integration_name: integration.name
-                    });
-
-                    integration.invoke.call(integration, method, result);
-                  }
-                );
-              } else {
-                metrics.increment('analytics_js.integration.invoke', {
-                  method: method,
-                  integration_name: integration.name
-                });
-
-                integration.invoke.call(integration, method, result);
-              }
-            }
-          );
-        } catch (e) {
-          metrics.increment('analytics_js.integration.invoke.error', {
-            method: method,
-            integration_name: integration.name
-          });
-          self.log(
-            'Error invoking .%s method of %s integration: %o',
-            method,
-            name,
-            e
-          );
-        }
-      }
-    });
-  }
-};
-
-/**
- * Push `args`.
- *
- * @param {Array} args
- * @api private
- */
-
-Analytics.prototype.push = function(args: any[]) {
-  var method = args.shift();
-  if (!this[method]) return;
-  this[method].apply(this, args);
-};
-
-/**
- * Reset group and user traits and id's.
- *
- * @api public
- */
-
-Analytics.prototype.reset = function() {
-  this.user().logout();
-  this.group().logout();
-};
-
-/**
- * Parse the query string for callable methods.
- *
- * @api private
- */
-
-Analytics.prototype._parseQuery = function(query: string): SegmentAnalytics {
-  // Parse querystring to an object
-  var q = querystring.parse(query);
-  // Create traits and properties objects, populate from querysting params
-  var traits = pickPrefix('ajs_trait_', q);
-  var props = pickPrefix('ajs_prop_', q);
-  // Trigger based on callable parameters in the URL
-  if (q.ajs_uid) this.identify(q.ajs_uid, traits);
-  if (q.ajs_event) this.track(q.ajs_event, props);
-  if (q.ajs_aid) user.anonymousId(q.ajs_aid);
-  return this;
-
-  /**
-   * Create a shallow copy of an input object containing only the properties
-   * whose keys are specified by a prefix, stripped of that prefix
-   *
-   * @return {Object}
-   * @api private
-   */
-
-  function pickPrefix(prefix: string, object: object) {
-    var length = prefix.length;
-    var sub;
-    return Object.keys(object).reduce(function(acc, key) {
-      if (key.substr(0, length) === prefix) {
-        sub = key.substr(length);
-        acc[sub] = object[key];
-      }
-      return acc;
-    }, {});
-  }
-};
-
-/**
- * Normalize the given `msg`.
- */
-
-Analytics.prototype.normalize = function(msg: {
-  options: { [key: string]: unknown }
-  context: { page: Partial<PageDefaults> };
-  anonymousId: string;
-}): object {
-  msg = normalize(msg, Object.keys(this._integrations));
-  if (msg.anonymousId) user.anonymousId(msg.anonymousId);
-  msg.anonymousId = user.anonymousId();
-
-  // Ensure all outgoing requests include page data in their contexts.
-  msg.context.page = {
-    ...pageDefaults(),
-    ...msg.context.page
-  };
-
-  return msg;
-};
-
-/**
- * Merges the tracking plan and initialization integration options.
- *
- * @param  {Object} planIntegrations Tracking plan integrations.
- * @return {Object}                  The merged integrations.
- */
-Analytics.prototype._mergeInitializeAndPlanIntegrations = function(
-  planIntegrations: SegmentIntegration
-): object {
-  // Do nothing if there are no initialization integrations
-  if (!this.options.integrations) {
-    return planIntegrations;
-  }
-
-  // Clone the initialization integrations
-  var integrations = extend({}, this.options.integrations);
-  var integrationName: string;
-
-  // Allow the tracking plan to disable integrations that were explicitly
-  // enabled on initialization
-  if (planIntegrations.All === false) {
-    integrations = { All: false };
-  }
-
-  for (integrationName in planIntegrations) {
-    if (planIntegrations.hasOwnProperty(integrationName)) {
-      // Don't allow the tracking plan to re-enable disabled integrations
-      if (this.options.integrations[integrationName] !== false) {
-        integrations[integrationName] = planIntegrations[integrationName];
-      }
-    }
-  }
-
-  return integrations;
-};
-
-/**
- * No conflict support.
- */
-
-Analytics.prototype.noConflict = function(): SegmentAnalytics {
-  window.analytics = _analytics;
-  return this;
-};
-
-/*
- * Exports.
- */
-
-module.exports = Analytics;
-module.exports.cookie = cookie;
-module.exports.memory = memory;
-module.exports.store = store;
-module.exports.metrics = metrics;

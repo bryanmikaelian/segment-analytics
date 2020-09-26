@@ -104,14 +104,7 @@ Cookie.prototype.remove = function(key: string): boolean {
   }
 };
 
-/**
- * Expose the cookie singleton.
- */
-
-module.exports = bindAll(new Cookie());
-
-/**
- * Expose the `Cookie` constructor.
- */
-
-module.exports.Cookie = Cookie;
+export default bindAll(new Cookie())
+export {
+  Cookie
+}

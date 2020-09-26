@@ -43,7 +43,8 @@ module.exports = function(config) {
       },
       compilerOptions: {
         sourceMap: true,
-        esModuleInterop: true
+        esModuleInterop: true,
+        resolveJsonModule: true
       },
       include: ["lib", "test"],
     }

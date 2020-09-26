@@ -1,9 +1,7 @@
-'use strict';
-
-var assert = require('proclaim');
-var metrics = require('../build').constructor.metrics;
-var sinon = require('sinon');
-var send = require('@segment/send-json');
+import assert from 'proclaim'
+import sinon from 'sinon'
+import send from '@segment/send-json'
+import { metrics } from '../lib/legacy'
 
 describe('metrics', function() {
   var xhr;

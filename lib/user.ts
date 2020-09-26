@@ -1,13 +1,12 @@
-'use strict';
-
 /*
  * Module dependencies.
  */
 
 import { InitOptions } from './types';
+import cookie from './cookie'
+
 var Entity = require('./entity');
 var bindAll = require('bind-all');
-var cookie = require('./cookie');
 var debug = require('debug')('analytics:user');
 var inherit = require('inherits');
 var rawCookie = require('@segment/cookie');
@@ -201,10 +200,12 @@ User.prototype._loadOldCookie = function(): boolean {
  * Expose the user singleton.
  */
 
-module.exports = bindAll(new User());
+export default bindAll(new User());
 
 /**
  * Expose the `User` constructor.
  */
 
-module.exports.User = User;
+export {
+  User
+}
