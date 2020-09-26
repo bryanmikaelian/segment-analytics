@@ -1,3 +1,6 @@
+/**
+ * @deprecated Use `Analytics` in `lib/analytics.ts`
+ */
 export interface SegmentAnalytics {
   Integrations: { [name: string]: (options: SegmentOpts) => void };
   options: InitOptions;
