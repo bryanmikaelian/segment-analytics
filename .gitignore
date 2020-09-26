@@ -3,7 +3,7 @@ node_modules
 package-lock.json
 junit-reports
 
-build/
+dist/
 .DS_Store
 
 test-e2e/output

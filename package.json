@@ -3,7 +3,7 @@
   "author": "Bryan Mikaelian <bryan@iceblock.tech>",
   "version": "1.0.0",
   "description": "An enhanced version of Analytics.js.",
-  "types": "lib/index.d.ts",
+  "types": "dist/index.d.ts",
   "keywords": [
     "analytics",
     "analytics.js",
@@ -15,7 +15,7 @@
     "build": "yarn tsc --declaration",
     "test": "yarn karma start karma.conf.ts",
     "ci": "yarn lint --quiet && yarn test",
-    "clean": "rm -rf *.log coverage build",
+    "clean": "rm -rf *.log coverage dist",
     "lint": "eslint \"./{lib,test}/**/*.ts\"",
     "format": "prettier-eslint --write --list-different \"./{lib,test,test-e2e}/**/*.{ts,js,json,md}\"",
     "precommit": "lint-staged",
