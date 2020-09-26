@@ -2,8 +2,8 @@
 name: Feature Proposal
 about: Suggest an idea for this project that is beyond the scope of a single PR.
 title: ''
-labels: RFC
-assignees: ''
+labels: RFC - Proposed
+assignees: bryanmikaelian
 
 ---
 
