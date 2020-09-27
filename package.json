@@ -13,7 +13,7 @@
   "main": "build/index.js",
   "scripts": {
     "build": "yarn tsc --declaration",
-    "test": "yarn karma start karma.conf.ts",
+    "test": "yarn lint --quiet && yarn karma start karma.conf.ts",
     "ci": "yarn lint --quiet && yarn test",
     "clean": "rm -rf *.log coverage dist",
     "lint": "eslint \"./{lib,test}/**/*.ts\"",
@@ -112,7 +112,7 @@
     "prettier-eslint-cli": "5.0.0",
     "proclaim": "^3.5.1",
     "puppeteer": "^5.3.0",
-    "sinon": "^1.17.7",
+    "sinon": "^9.0.3",
     "snyk": "^1.393.0",
     "ts-node": "^8.10.2",
     "typescript": "^4.0.2",

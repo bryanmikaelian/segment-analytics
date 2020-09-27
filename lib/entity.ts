@@ -1,16 +1,9 @@
-'use strict';
-
 import { InitOptions } from './types';
-import cloneDeep from 'lodash.clonedeep'
-import assignIn from 'lodash.assignin'
-
-/*
- * Module dependencies.
- */
-
-import cookie from './cookie'
-import store from './store'
-import memory from './memory'
+import cloneDeep from 'lodash.clonedeep';
+import assignIn from 'lodash.assignin';
+import cookie from './cookie';
+import store from './store';
+import memory from './memory';
 
 var debug = require('debug')('analytics:entity');
 var isodateTraverse = require('@segment/isodate-traverse');
@@ -19,12 +12,13 @@ var isodateTraverse = require('@segment/isodate-traverse');
  * Expose `Entity`
  */
 
-module.exports = Entity;
+export default Entity;
 
 /**
  * Initialize new `Entity` with `options`.
+ * @constructor
+ * @this {Entity}
  */
-
 function Entity(options: InitOptions) {
   this.options(options);
   this.initialize();
@@ -77,7 +71,7 @@ Entity.prototype.options = function(options?: InitOptions) {
   this._options = {
     ...this.defaults,
     ...options
-  }
+  };
 };
 
 /**
@@ -135,7 +129,9 @@ Entity.prototype._getIdFromCookie = function(): string {
  * Get the entity's id from cookies.
  */
 
-Entity.prototype._getIdFromLocalStorage = function(): string | Record<string, unknown> {
+Entity.prototype._getIdFromLocalStorage = function():
+  | string
+  | Record<string, unknown> {
   if (!this._options.localStorageFallbackDisabled) {
     return store.get(this._options.cookie.key);
   }

@@ -1,5 +1,5 @@
-import assert from 'proclaim'
-import cookie from  '../lib/cookie'
+import assert from 'proclaim';
+import cookie from '../lib/cookie';
 
 describe('cookie', function() {
   beforeEach(function() {
@@ -10,7 +10,7 @@ describe('cookie', function() {
 
   afterEach(function() {
     // reset to defaults
-    cookie.options({});
+    cookie.options = {};
     // remove all cookies
     document.cookie.split(';').forEach(function(entry) {
       cookie.remove(entry.split('=')[0]);
@@ -56,39 +56,33 @@ describe('cookie', function() {
 
   describe('#options', function() {
     it('should save options', function() {
-      cookie.options({ path: '/xyz' });
-      assert(cookie.options().path === '/xyz');
-      assert(cookie.options().maxage === 31536000000);
+      cookie.options = { path: '/xyz' };
+      assert(cookie.options.path === '/xyz');
+      assert(cookie.options.maxage === 31536000000);
     });
 
     it('should have default options', function() {
-      cookie.options({ domain: '' });
+      cookie.options = { domain: '' };
 
-      assert(cookie.options().maxage === 31536000000);
-      assert(cookie.options().path === '/');
-      assert(cookie.options().domain === '');
-      assert(cookie.options().sameSite === 'Lax');
+      assert(cookie.options.maxage === 31536000000);
+      assert(cookie.options.path === '/');
+      assert(cookie.options.domain === '');
+      assert(cookie.options.sameSite === 'Lax');
     });
 
     it('should set the domain correctly', function() {
-      cookie.options({ domain: '' });
-      assert(cookie.options().domain === '');
+      cookie.options = { domain: '' };
+      assert(cookie.options.domain === '');
     });
 
     it('should set SameSite=Lax by default', function() {
-      assert(cookie.options().sameSite === 'Lax');
+      assert(cookie.options.sameSite === 'Lax');
     });
 
     it('should fallback to `domain=null` when it cant set the test cookie', function() {
-      cookie.options({ domain: 'baz.com' });
-      assert(cookie.options().domain === null);
+      cookie.options = { domain: 'baz.com' };
+      assert(cookie.options.domain === null);
       assert(cookie.get('ajs:test') === null);
-    });
-
-    // TODO: unskip once we don't use `window`, instead mock it :/
-    it.skip('should set domain localhost to `""`', function() {
-      cookie.options({});
-      assert(cookie.options().domain === '');
     });
   });
 });

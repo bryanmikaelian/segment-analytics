@@ -1,14 +1,14 @@
 import { cookie, memory, store } from '../lib/legacy';
-import {default as g, Group } from '../lib/group'
+import { default as g, Group } from '../lib/group';
 
-import assert from 'proclaim'
-import sinon from 'sinon'
+import assert from 'proclaim';
+import sinon from 'sinon';
 
-let group = g
+let group;
 
 describe('group', function() {
-  var cookieKey = group._options.cookie.key;
-  var localStorageKey = group._options.localStorage.key;
+  var cookieKey = g._options.cookie.key;
+  var localStorageKey = g._options.localStorage.key;
 
   beforeEach(function() {
     group = new Group();
@@ -73,14 +73,15 @@ describe('group', function() {
   });
 
   describe('#id', function() {
+    let stub;
     describe('when cookies are disabled', function() {
-      beforeEach(function() {
-        sinon.stub(cookie, 'get');
+      before(function() {
+        stub = sinon.stub(cookie, 'get');
         group = new Group();
       });
 
-      afterEach(function() {
-        cookie.get.restore();
+      after(function() {
+        stub.restore();
       });
 
       it('should get an id from store', function() {
@@ -111,15 +112,16 @@ describe('group', function() {
     });
 
     describe('when cookies and localStorage are disabled', function() {
-      beforeEach(function() {
-        sinon.stub(cookie, 'get');
+      let stub;
+      before(function() {
+        stub = sinon.stub(cookie, 'get');
         store.enabled = false;
         group = new Group();
       });
 
-      afterEach(function() {
+      after(function() {
         store.enabled = true;
-        cookie.get.restore();
+        stub.restore();
       });
 
       it('should get an id from the store', function() {
