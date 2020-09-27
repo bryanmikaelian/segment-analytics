@@ -15,6 +15,7 @@
     "prefer-rest-params": "warn",
     "prefer-spread": "warn",
     "strict": "warn",
+    "no-restricted-globals": "off",
     "@typescript-eslint/adjacent-overload-signatures": "warn",
     "@typescript-eslint/ban-ts-comment": "warn",
     "@typescript-eslint/ban-types": "warn",

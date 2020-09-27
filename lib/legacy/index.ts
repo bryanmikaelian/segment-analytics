@@ -12,6 +12,7 @@ import { Analytics } from '../analytics';
 import cookie from '../cookie'
 import user from '../user'
 import group from '../group'
+import store from '../store'
 
 import cloneDeep from 'lodash.clonedeep';
 import pick from 'lodash.pick';
@@ -42,7 +43,6 @@ var normalize = require('../normalize');
 var on = require('component-event').bind;
 var prevent = require('@segment/prevent-default');
 var querystring = require('component-querystring');
-var store = require('../store');
 var type = require('component-type');
 
 /**
@@ -725,7 +725,7 @@ Analytics.prototype._options = function(
   this.options = options;
   cookie.options(options.cookie);
   metrics.options(options.metrics);
-  store.options(options.localStorage);
+  store.options = options.localStorage;
   user.options(options.user);
   group.options(options.group);
   return this;

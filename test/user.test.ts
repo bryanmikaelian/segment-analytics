@@ -2,7 +2,8 @@ import assert from 'proclaim'
 import sinon from 'sinon'
 import rawCookie from '@segment/cookie'
 
-import { cookie, store, memory } from '../lib/legacy'
+import store from '../lib/store'
+import { cookie, memory } from '../lib/legacy'
 import { default as u, User } from '../lib/user'
 
 let user = u

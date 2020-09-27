@@ -96,7 +96,7 @@ describe('group', function() {
 
       it('should set an id to the store', function() {
         group.id('id');
-        assert(store.get(cookieKey) === 'id');
+        assert.isTrue(store.get(cookieKey) === 'id');
       });
 
       it('should set the id when not persisting', function() {

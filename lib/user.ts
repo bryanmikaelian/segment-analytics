@@ -4,6 +4,7 @@
 
 import { InitOptions } from './types';
 import cookie from './cookie'
+import { default as localStorage } from './store'
 
 var Entity = require('./entity');
 var bindAll = require('bind-all');
@@ -11,7 +12,6 @@ var debug = require('debug')('analytics:user');
 var inherit = require('inherits');
 var rawCookie = require('@segment/cookie');
 var uuid = require('uuid');
-var localStorage = require('./store');
 
 /**
  * User defaults
@@ -127,7 +127,7 @@ User.prototype.anonymousId = function(anonymousId?: string): string | User {
 
   if (!this._options.localStorageFallbackDisabled) {
     // if anonymousId doesn't exist in cookies, check localStorage
-    anonymousId = localStorage.get('ajs_anonymous_id');
+    anonymousId = localStorage.get('ajs_anonymous_id') as string;
     if (anonymousId) {
       // Write to cookies if available in localStorage but not cookies
       store.set('ajs_anonymous_id', anonymousId);

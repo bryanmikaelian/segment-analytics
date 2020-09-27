@@ -4,7 +4,7 @@ import { store } from '../lib/legacy'
 describe('store', function() {
   afterEach(function() {
     // reset to defaults
-    store.options({});
+    store.options = {}
     store.remove('x');
   });
 
@@ -37,15 +37,15 @@ describe('store', function() {
 
   describe('#options', function() {
     it('should be able to save options', function() {
-      store.options({ enabled: false });
-      assert(store.options().enabled === false);
+      store.options = { enabled: false }
+      assert(store.options.enabled === false);
       assert(store.enabled === false);
     });
 
     it('should have default options', function() {
-      store.options({});
+      store.options = {};
 
-      assert(store.options().enabled);
+      assert(store.options.enabled);
     });
   });
 });

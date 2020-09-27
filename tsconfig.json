@@ -9,5 +9,13 @@
     "resolveJsonModule": true
   },
   "include": ["lib"],
-  "exclude": ["node_modules", "*.md", "Makefile", "karma.*", "test", "test-e2e"]
+  "exclude": [
+    "node_modules",
+    "*.md",
+    "Makefile",
+    "karma.*",
+    "test",
+    "test-e2e",
+    "lib/**/*.test.ts"
+  ]
 }

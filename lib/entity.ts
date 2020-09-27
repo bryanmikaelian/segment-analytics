@@ -9,10 +9,10 @@ import assignIn from 'lodash.assignin'
  */
 
 import cookie from './cookie'
+import store from './store'
 
 var debug = require('debug')('analytics:entity');
 var memory = require('./memory');
-var store = require('./store');
 var isodateTraverse = require('@segment/isodate-traverse');
 
 /**
@@ -135,7 +135,7 @@ Entity.prototype._getIdFromCookie = function(): string {
  * Get the entity's id from cookies.
  */
 
-Entity.prototype._getIdFromLocalStorage = function(): string | null {
+Entity.prototype._getIdFromLocalStorage = function(): string | Record<string, unknown> {
   if (!this._options.localStorageFallbackDisabled) {
     return store.get(this._options.cookie.key);
   }
@@ -208,7 +208,7 @@ Entity.prototype._getTraits = function(): object {
  * Set the entity's `traits`.
  */
 
-Entity.prototype._setTraits = function(traits: object) {
+Entity.prototype._setTraits = function(traits: Record<string, unknown>) {
   traits = traits || {};
   if (this._options.persist) {
     store.set(this._options.localStorage.key, traits);
