@@ -12,6 +12,7 @@ module.exports = function(config) {
       'lib/**/*.ts',
       'lib/**/*.test.ts'
     ],
+
     browsers: ['ChromeHeadless'],
 
     singleRun: true,
@@ -33,20 +34,20 @@ module.exports = function(config) {
       }
     },
 
-    browserify: {
-      debug: true
+    specReporter: {
+      failFast: true
     },
 
     karmaTypescriptConfig: {
       bundlerOptions: {
-        sourceMap: true,
+        sourceMap: true
       },
       compilerOptions: {
         sourceMap: true,
         esModuleInterop: true,
         resolveJsonModule: true
       },
-      include: ["lib", "test"],
+      include: ['lib', 'test']
     }
   });
 };

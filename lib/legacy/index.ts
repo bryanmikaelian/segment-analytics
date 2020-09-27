@@ -9,15 +9,14 @@ import {
 
 import { pageDefaults } from '../pageDefaults';
 import { Analytics } from '../analytics';
-import cookie from '../cookie'
-import user from '../user'
-import group from '../group'
-import store from '../store'
-import memory from '../memory'
+import cookie from '../cookie';
+import user from '../user';
+import group from '../group';
+import store from '../store';
+import memory from '../memory';
 
 import cloneDeep from 'lodash.clonedeep';
 import pick from 'lodash.pick';
-
 
 var _analytics = global.analytics;
 
@@ -106,7 +105,7 @@ Analytics.prototype.addDestinationMiddleware = function(
     if (!self._destinationMiddlewares[integrationName]) {
       self._destinationMiddlewares[
         integrationName
-        ] = new DestinationMiddlewareChain();
+      ] = new DestinationMiddlewareChain();
     }
 
     self._destinationMiddlewares[integrationName].add(middleware);
@@ -464,7 +463,7 @@ Analytics.prototype.trackClick = Analytics.prototype.trackLink = function(
     if (type(el) !== 'element') {
       throw new TypeError('Must pass HTMLElement to `analytics.trackLink`.');
     }
-    on(el, 'click', (e) => {
+    on(el, 'click', e => {
       const ev = is.fn(event) ? event(el) : event;
       const props = is.fn(properties) ? properties(el) : properties;
       const href =
@@ -513,7 +512,7 @@ Analytics.prototype.trackSubmit = Analytics.prototype.trackForm = function(
   elements.forEach((el: { submit: () => void }) => {
     if (type(el) !== 'element')
       throw new TypeError('Must pass HTMLElement to `analytics.trackForm`.');
-    const handler = (e) => {
+    const handler = e => {
       prevent(e);
 
       const ev = is.fn(event) ? event(el) : event;
@@ -718,12 +717,13 @@ Analytics.prototype.debug = function(str: string | boolean) {
  * @api private
  */
 
+// TODO: We need to pass these various entities around instead globally modifying the import
 Analytics.prototype._options = function(
   options: InitOptions
 ): SegmentAnalytics {
   options = options || {};
   this.options = options;
-  cookie.options(options.cookie);
+  cookie.options = options.cookie;
   metrics.options(options.metrics);
   store.options = options.localStorage;
   user.options(options.user);
@@ -960,7 +960,7 @@ Analytics.prototype._parseQuery = function(query: string): SegmentAnalytics {
  */
 
 Analytics.prototype.normalize = function(msg: {
-  options: { [key: string]: unknown }
+  options: { [key: string]: unknown };
   context: { page: Partial<PageDefaults> };
   anonymousId: string;
 }): object {
@@ -1026,11 +1026,4 @@ Analytics.prototype.noConflict = function(): SegmentAnalytics {
  * Exports.
  */
 
-export {
-  Analytics,
-  cookie,
-  memory,
-  store,
-  metrics
-};
-
+export { Analytics, cookie, memory, store, metrics };

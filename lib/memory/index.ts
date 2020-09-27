@@ -1,16 +1,13 @@
-import cloneDeep from 'lodash.clonedeep'
-
-var bindAll = require('bind-all');
-
+import cloneDeep from 'lodash.clonedeep';
 
 /**
  * Memory is an in-memory data store.
  */
 class Memory {
-  private readonly store: Record<string, unknown>
+  private readonly store: Record<string, unknown>;
 
   constructor() {
-    this.store = {}
+    this.store = {};
   }
 
   /**
@@ -32,15 +29,14 @@ class Memory {
    * @return {boolean}
    */
   public get<T = unknown>(key: string): T | undefined {
-    const value = this.store[key] as T
+    const value = this.store[key] as T;
 
     if (!value) {
-      return
+      return;
     }
 
     return cloneDeep(value);
   }
-
 
   /**
    * Removes a value from memory for a given key.
@@ -49,9 +45,9 @@ class Memory {
    * @return {boolean}
    */
   public remove(key: string): boolean {
-    delete this.store[key]
-    return true
+    delete this.store[key];
+    return true;
   }
 }
 
-export default new Memory()
+export default new Memory();

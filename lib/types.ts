@@ -2,6 +2,7 @@
  * @deprecated Use `Analytics` in `lib/analytics.ts`
  */
 import { StoreOptions } from './store';
+import { CookieOptions } from './cookie';
 
 export interface SegmentAnalytics {
   Integrations: { [name: string]: (options: SegmentOpts) => void };
@@ -24,14 +25,6 @@ export interface SegmentAnalytics {
 export interface IntegrationsSettings {
   // TODO remove `any`
   [key: string]: any;
-}
-
-export interface CookieOptions {
-  maxage?: number;
-  domain?: string;
-  path?: string;
-  secure?: boolean;
-  sameSite?: string
 }
 
 export interface MetricsOptions {

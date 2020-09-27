@@ -3,10 +3,10 @@
  */
 
 import { InitOptions } from './types';
-import cookie from './cookie'
-import { default as localStorage } from './store'
+import Entity from './entity';
+import cookie from './cookie';
+import { default as localStorage } from './store';
 
-var Entity = require('./entity');
 var bindAll = require('bind-all');
 var debug = require('debug')('analytics:user');
 var inherit = require('inherits');
@@ -187,7 +187,10 @@ User.prototype.load = function() {
  */
 
 User.prototype._loadOldCookie = function(): boolean {
-  var user = cookie.get(this._options.cookie.oldKey);
+  const user = cookie.get(this._options.cookie.oldKey) as Record<
+    string,
+    unknown
+  >;
   if (!user) return false;
 
   this.id(user.id);
@@ -206,6 +209,4 @@ export default bindAll(new User());
  * Expose the `User` constructor.
  */
 
-export {
-  User
-}
+export { User };

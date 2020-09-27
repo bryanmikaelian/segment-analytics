@@ -1,13 +1,12 @@
-import assert from 'proclaim'
-import assignIn from 'lodash.assignin'
+import assert from 'proclaim';
+import assignIn from 'lodash.assignin';
 
 import { Analytics } from '../../lib/analytics';
-import cookie from '../../lib/cookie'
-import user from '../../lib/user'
-import group from '../../lib/group'
-import { pageDefaults} from '../../lib/pageDefaults';
-import { store as s, metrics as m } from '../../lib/legacy'
-
+import cookie from '../../lib/cookie';
+import user from '../../lib/user';
+import group from '../../lib/group';
+import { pageDefaults } from '../../lib/pageDefaults';
+import { store as s, metrics as m } from '../../lib/legacy';
 
 var Facade = require('segmentio-facade');
 var bind = require('component-event').bind;
@@ -516,15 +515,12 @@ describe('Analytics', function() {
     });
 
     afterEach(function() {
-      cookie.options.restore();
-      user.options.restore();
-      group.options.restore();
-      metrics.options.restore();
+      sinon.restore();
     });
 
     it('should set cookie options', function() {
-      analytics._options({ cookie: { option: true } });
-      assert(cookie.options.calledWith({ option: true }));
+      analytics._options({ cookie: { secure: true } });
+      assert(cookie.options.secure);
     });
 
     it('should set metrics options', function() {
@@ -830,18 +826,21 @@ describe('Analytics', function() {
     });
 
     it('should should not overwrite context.page values due to an existing bug', function() {
-      analytics.page({ prop: true, context: { page: { search: "lol" } } }, { context: { page: { search: "" } } });
+      analytics.page(
+        { prop: true, context: { page: { search: 'lol' } } },
+        { context: { page: { search: '' } } }
+      );
       var page = analytics._invoke.args[0][1];
       // FIXME: This assert should fail once the bug is fixed
       assert.notDeepEqual(page.context(), {
         page: {
           ...defaults,
-          search: "lol",
-        },
+          search: 'lol'
+        }
       });
       // FIXME: This assert should fail once the bug is fixed
       assert.deepEqual(page.context(), {
-        page: defaults,
+        page: defaults
       });
     });
 
@@ -1639,13 +1638,10 @@ describe('Analytics', function() {
       );
 
       var track = analytics._invoke.args[0][1];
-      assert.deepEqual(
-        track.context().page,
-        {
-          ...contextPage,
-          title: 'lol'
-        }
-      );
+      assert.deepEqual(track.context().page, {
+        ...contextPage,
+        title: 'lol'
+      });
     });
 
     it('should accept context.traits', function() {
@@ -1678,14 +1674,14 @@ describe('Analytics', function() {
       link = document.createElement('a');
       link.href = '#';
       document.body.appendChild(link);
-      (window as any).jQuery = require('jquery')
+      (window as any).jQuery = require('jquery');
     });
 
     afterEach(function() {
       window.location.hash = '';
       if (wrap) document.body.removeChild(wrap);
       document.body.removeChild(link);
-      (window as any).jQuery = null
+      (window as any).jQuery = null;
     });
 
     it('should trigger a track on an element click', function() {
@@ -1798,7 +1794,7 @@ describe('Analytics', function() {
     var submit;
 
     before(function() {
-      (window as any).jQuery = require('jquery')
+      (window as any).jQuery = require('jquery');
     });
 
     after(function() {

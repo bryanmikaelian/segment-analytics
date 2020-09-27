@@ -1,12 +1,12 @@
 'use strict';
 
 import { InitOptions } from './types';
+import Entity from './entity';
 
 /*
  * Module dependencies.
  */
 
-var Entity = require('./entity');
 var bindAll = require('bind-all');
 var debug = require('debug')('analytics:group');
 var inherit = require('inherits');
@@ -51,6 +51,4 @@ export default bindAll(new Group());
  * Expose the `Group` constructor.
  */
 
-export {
-  Group
-}
+export { Group };

@@ -1,13 +1,12 @@
-import assert from 'proclaim'
-import sinon from 'sinon'
-import rawCookie from '@segment/cookie'
+import assert from 'proclaim';
+import sinon from 'sinon';
+import rawCookie from '@segment/cookie';
 
-import store from '../lib/store'
-import memory from '../lib/memory'
-import { cookie } from '../lib/legacy'
-import { default as u, User } from '../lib/user'
+import { store, cookie } from '../lib/legacy';
+import memory from '../lib/memory';
+import { default as u, User } from '../lib/user';
 
-let user = u
+let user = u;
 
 describe('user', function() {
   var cookieKey = user._options.cookie.key;
@@ -107,7 +106,7 @@ describe('user', function() {
       });
 
       afterEach(function() {
-        cookie.get.restore();
+        sinon.restore();
       });
 
       it('should get an id from the store', function() {
@@ -170,7 +169,7 @@ describe('user', function() {
 
       afterEach(function() {
         store.enabled = true;
-        cookie.get.restore();
+        sinon.restore();
       });
 
       it('should get an id from the memory', function() {
@@ -284,7 +283,7 @@ describe('user', function() {
       });
 
       afterEach(function() {
-        cookie.get.restore();
+        sinon.restore();
       });
 
       it('should get an id from the store', function() {
@@ -314,7 +313,7 @@ describe('user', function() {
 
       afterEach(function() {
         store.enabled = true;
-        cookie.get.restore();
+        sinon.restore();
       });
 
       it('should get an id from the memory', function() {

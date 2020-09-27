@@ -1,6 +1,6 @@
 export interface StoreOptions {
   enabled?: boolean;
-  [key: string]: unknown
+  [key: string]: unknown;
 }
 
 /**
@@ -10,12 +10,11 @@ export interface StoreOptions {
 class Store {
   public enabled: boolean;
   private _options: StoreOptions;
-  private store: Storage
-
+  private store: Storage;
 
   constructor(options?: StoreOptions) {
     this._options = options;
-    this.store = localStorage
+    this.store = localStorage;
   }
 
   /**
@@ -27,7 +26,7 @@ class Store {
 
     options = {
       enabled: true,
-      ...options || {}
+      ...(options || {})
     };
 
     this.enabled = options.enabled;
@@ -38,7 +37,7 @@ class Store {
    * Returns the options for the store.
    */
   public get options(): StoreOptions {
-    return this._options
+    return this._options;
   }
 
   /**
@@ -55,8 +54,8 @@ class Store {
     }
 
     if (typeof value === 'object') {
-      const d = JSON.stringify(value)
-      return this.store.setItem(key, d)
+      const d = window.JSON.stringify(value);
+      return this.store.setItem(key, d);
     }
   }
 
@@ -67,16 +66,16 @@ class Store {
    */
   public get(key: string): string | Record<string, unknown> {
     if (!this.enabled) return null;
-    const item = this.store.getItem(key)
+    const item = this.store.getItem(key);
 
     if (!item) {
-      return
+      return;
     }
 
     try {
-      return JSON.parse(item)
+      return window.JSON.parse(item);
     } catch {
-      return item
+      return item;
     }
   }
 
@@ -87,13 +86,10 @@ class Store {
    */
   public remove(key: string): void {
     if (!this.enabled) return;
-    return this.store.removeItem(key)
+    return this.store.removeItem(key);
   }
 }
 
 export default new Store();
 
-export {
-  Store
-};
-
+export { Store };
