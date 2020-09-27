@@ -3,7 +3,8 @@ import sinon from 'sinon'
 import rawCookie from '@segment/cookie'
 
 import store from '../lib/store'
-import { cookie, memory } from '../lib/legacy'
+import memory from '../lib/memory'
+import { cookie } from '../lib/legacy'
 import { default as u, User } from '../lib/user'
 
 let user = u

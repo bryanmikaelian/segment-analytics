@@ -7,7 +7,7 @@ export interface StoreOptions {
  * Index is a small wrapper around `Storage` with the option to enable or disable the store.
  * Also supports serializing and deserializing `Record<string, unknown>` values as opposed to just `string` values.
  */
-class Index {
+class Store {
   public enabled: boolean;
   private _options: StoreOptions;
   private store: Storage
@@ -91,9 +91,9 @@ class Index {
   }
 }
 
-export default new Index();
+export default new Store();
 
 export {
-  Index
+  Store
 };
 
