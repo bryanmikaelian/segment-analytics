@@ -10,9 +10,9 @@ import assignIn from 'lodash.assignin'
 
 import cookie from './cookie'
 import store from './store'
+import memory from './memory'
 
 var debug = require('debug')('analytics:entity');
-var memory = require('./memory');
 var isodateTraverse = require('@segment/isodate-traverse');
 
 /**

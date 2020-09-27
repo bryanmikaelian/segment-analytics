@@ -13,6 +13,7 @@ import cookie from '../cookie'
 import user from '../user'
 import group from '../group'
 import store from '../store'
+import memory from '../memory'
 
 import cloneDeep from 'lodash.clonedeep';
 import pick from 'lodash.pick';
@@ -38,7 +39,6 @@ var debug = require('debug');
 var is = require('is');
 var isMeta = require('@segment/is-meta');
 var nextTick = require('next-tick');
-var memory = require('../memory');
 var normalize = require('../normalize');
 var on = require('component-event').bind;
 var prevent = require('@segment/prevent-default');
