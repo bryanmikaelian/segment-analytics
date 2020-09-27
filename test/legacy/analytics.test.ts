@@ -510,7 +510,6 @@ describe('Analytics', function() {
   describe('#_options', function() {
     beforeEach(function() {
       sinon.stub(cookie, 'options');
-      sinon.stub(store, 'options');
       sinon.stub(user, 'options');
       sinon.stub(group, 'options');
       sinon.stub(metrics, 'options');
@@ -518,7 +517,6 @@ describe('Analytics', function() {
 
     afterEach(function() {
       cookie.options.restore();
-      store.options.restore();
       user.options.restore();
       group.options.restore();
       metrics.options.restore();
@@ -536,7 +534,7 @@ describe('Analytics', function() {
 
     it('should set store options', function() {
       analytics._options({ localStorage: { option: true } });
-      assert(store.options.calledWith({ option: true }));
+      assert(store.options.option);
     });
 
     it('should set user options', function() {

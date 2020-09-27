@@ -1,6 +1,8 @@
 /**
  * @deprecated Use `Analytics` in `lib/analytics.ts`
  */
+import { StoreOptions } from './store';
+
 export interface SegmentAnalytics {
   Integrations: { [name: string]: (options: SegmentOpts) => void };
   options: InitOptions;
@@ -37,10 +39,6 @@ export interface MetricsOptions {
   sampleRate?: number;
   flushTimer?: number;
   maxQueueSize?: number;
-}
-
-export interface StoreOptions {
-  enabled?: boolean;
 }
 
 export interface UserOptions {

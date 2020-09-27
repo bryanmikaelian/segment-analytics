@@ -8,9 +8,9 @@ module.exports = function(config) {
   config.set({
     files: [
       { pattern: 'test/support/*.html', included: false },
-      'test/support/global.ts', // NOTE: This must run before all tests
       'test/**/*.test.ts',
-      'lib/**/*.ts'
+      'lib/**/*.ts',
+      'lib/**/*.test.ts'
     ],
     browsers: ['ChromeHeadless'],
 
