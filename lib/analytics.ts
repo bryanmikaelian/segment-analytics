@@ -10,14 +10,24 @@ import {
   SegmentIntegration,
   SegmentOpts
 } from './types';
-import { SourceMiddlewareChain, IntegrationMiddlewareChain } from './middleware';
-import user from './user';
+import {
+  SourceMiddlewareChain,
+  IntegrationMiddlewareChain
+} from './middleware';
+import user from './entity/user';
+import { Group } from './entity/group';
 
 export class Analytics extends Emitter {
   public readonly VERSION: string;
   public readonly log: (args: string) => void;
-  public readonly Integrations: { [name: string]: (options: SegmentOpts) => void };
+  public readonly Integrations: {
+    [name: string]: (options: SegmentOpts) => void;
+  };
   public options: SegmentOpts;
+
+  // XXX: BACKWARDS COMPATIBILITY
+  // TODO: Determine if we even need this anymore
+  public _user: unknown;
 
   private _sourceMiddlewares: unknown;
   private _integrationMiddlewares: unknown;
@@ -25,13 +35,18 @@ export class Analytics extends Emitter {
   private _integrations: unknown;
   private _readied: boolean;
   private _timeout: number;
-  private _user: unknown;
 
   // TODO: These functions are all prototyped in legacy/index.ts.  Eventually migrate them to here
 
   // The initialize functions
-  init: (settings?: IntegrationsSettings, options?: InitOptions) => SegmentAnalytics;
-  initialize: (settings?: IntegrationsSettings, options?: InitOptions) => SegmentAnalytics;
+  init: (
+    settings?: IntegrationsSettings,
+    options?: InitOptions
+  ) => SegmentAnalytics;
+  initialize: (
+    settings?: IntegrationsSettings,
+    options?: InitOptions
+  ) => SegmentAnalytics;
 
   // The core Segment functions
   track: (
@@ -39,7 +54,7 @@ export class Analytics extends Emitter {
     properties?: unknown,
     options?: unknown,
     fn?: unknown
-  ) => SegmentAnalytics
+  ) => SegmentAnalytics;
 
   page: (
     category?: string,
@@ -56,52 +71,78 @@ export class Analytics extends Emitter {
     fn?: Function | SegmentOpts
   ) => SegmentAnalytics;
 
+  // TODO: A Segment `GROUP` call should be inndependent of the current group
   group: (
     id: string,
     traits?: unknown,
     options?: unknown,
     fn?: unknown
-  ) => SegmentAnalytics;
+  ) => SegmentAnalytics | Group;
 
   alias: (
     to: string,
     from?: string,
     options?: unknown,
     fn?: unknown
-  ) => SegmentAnalytics
+  ) => SegmentAnalytics;
 
   // Random util functions
 
   use: (plugin: (analytics: SegmentAnalytics) => void) => SegmentAnalytics;
-  addIntegration: (Integration: (options: SegmentOpts) => void) => SegmentAnalytics;
+  addIntegration: (
+    Integration: (options: SegmentOpts) => void
+  ) => SegmentAnalytics;
   addSourceMiddleware: (middleware: Function) => SegmentAnalytics;
   addIntegrationMiddleware: (middleware: Function) => SegmentAnalytics;
-  addDestinationMiddleware: (integrationName: string, middlewares: Array<unknown>) => SegmentAnalytics;
+  addDestinationMiddleware: (
+    integrationName: string,
+    middlewares: Array<unknown>
+  ) => SegmentAnalytics;
   setAnonymousId: (id: string) => SegmentAnalytics;
   add: (integration: { name: string | number }) => SegmentAnalytics;
   user: () => object;
-  pageview: (url: string) => SegmentAnalytics
-  ready: (fn: Function) => SegmentAnalytics
-  timeout: (timeout: number) => void
-  debug: (str: string | boolean) => void
-  reset: () => void
-  normalize: (msg: {
-    options: { [key: string]: unknown },
-    context: { page: Partial<PageDefaults> },
-    anonymousId: string
-  }) => object;
-  noConflict: () => SegmentAnalytics
-  trackClick: (forms: Element | Array<unknown> | JQuery, event: any, properties?: any) => SegmentAnalytics
-  trackLink: (forms: Element | Array<unknown> | JQuery, event: any, properties?: any) => SegmentAnalytics
-  trackSubmit: (forms: Element | Array<unknown>, event: any, properties?: any) => SegmentAnalytics
-  trackForm: (forms: Element | Array<unknown>, event: any, properties?: any) => SegmentAnalytics
-  push: (args: any[]) => void
+  pageview: (url: string) => SegmentAnalytics;
+  ready: (fn: Function) => SegmentAnalytics;
+  timeout: (timeout: number) => void;
+  debug: (str: string | boolean) => void;
+  reset: () => void;
+  normalize: (
+    msg: {
+      options: { [key: string]: unknown };
+      context: { page: Partial<PageDefaults> };
+      anonymousId: string;
+    }
+  ) => object;
+  noConflict: () => SegmentAnalytics;
+  trackClick: (
+    forms: Element | Array<unknown> | JQuery,
+    event: any,
+    properties?: any
+  ) => SegmentAnalytics;
+  trackLink: (
+    forms: Element | Array<unknown> | JQuery,
+    event: any,
+    properties?: any
+  ) => SegmentAnalytics;
+  trackSubmit: (
+    forms: Element | Array<unknown>,
+    event: any,
+    properties?: any
+  ) => SegmentAnalytics;
+  trackForm: (
+    forms: Element | Array<unknown>,
+    event: any,
+    properties?: any
+  ) => SegmentAnalytics;
+  push: (args: any[]) => void;
 
-  _mergeInitializeAndPlanIntegrations: (planIntegrations: SegmentIntegration) => object;
-  _options: (opts: InitOptions) => SegmentAnalytics
-  _callback: (fn: Function) => SegmentAnalytics
-  _invoke: (method: string, facade: unknown) => SegmentAnalytics
-  _parseQuery: (query: string) => SegmentAnalytics
+  _mergeInitializeAndPlanIntegrations: (
+    planIntegrations: SegmentIntegration
+  ) => object;
+  _options: (opts: InitOptions) => SegmentAnalytics;
+  _callback: (fn: Function) => SegmentAnalytics;
+  _invoke: (method: string, facade: unknown) => SegmentAnalytics;
+  _parseQuery: (query: string) => SegmentAnalytics;
 
   constructor() {
     super();

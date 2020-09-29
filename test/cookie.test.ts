@@ -1,5 +1,5 @@
 import assert from 'proclaim';
-import cookie from '../lib/cookie';
+import cookie from '../lib/entity/store/cookie';
 
 describe('cookie', function() {
   beforeEach(function() {

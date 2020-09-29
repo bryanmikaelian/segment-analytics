@@ -77,6 +77,7 @@
     "@types/node-fetch": "^2.5.7",
     "@types/proclaim": "^3.6.1",
     "@types/sinon": "^9.0.5",
+    "@types/uuid": "^8.3.0",
     "@typescript-eslint/eslint-plugin": "^4.1.0",
     "@typescript-eslint/parser": "^4.1.0",
     "assert": "1.5.0",

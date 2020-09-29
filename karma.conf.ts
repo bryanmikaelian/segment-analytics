@@ -9,8 +9,7 @@ module.exports = function(config) {
     files: [
       { pattern: 'test/support/*.html', included: false },
       'test/**/*.test.ts',
-      'lib/**/*.ts',
-      'lib/**/*.test.ts'
+      'lib/**/*.ts'
     ],
 
     browsers: ['ChromeHeadless'],
@@ -43,6 +42,7 @@ module.exports = function(config) {
         sourceMap: true
       },
       compilerOptions: {
+        target: 'ES2015',
         sourceMap: true,
         esModuleInterop: true,
         resolveJsonModule: true
