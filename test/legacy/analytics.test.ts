@@ -2,11 +2,11 @@ import assert from 'proclaim';
 import assignIn from 'lodash.assignin';
 
 import { Analytics } from '../../lib/analytics';
-import cookie from '../../lib/cookie';
-import user from '../../lib/user';
-import group from '../../lib/group';
+import cookie from '../../lib/entity/store/cookie';
 import { pageDefaults } from '../../lib/pageDefaults';
 import { store as s, metrics as m } from '../../lib/legacy';
+import { User } from '../../lib/entity/user';
+import { Group } from '../../lib/entity/group';
 
 var Facade = require('segmentio-facade');
 var bind = require('component-event').bind;
@@ -20,11 +20,14 @@ var Identify = Facade.Identify;
 var store = s;
 var metrics = m;
 
+let user: User;
+let group: Group;
+
 describe('Analytics', function() {
-  var analytics;
-  var contextPage;
-  var Test;
-  var settings;
+  let analytics;
+  let contextPage;
+  let Test;
+  let settings;
 
   beforeEach(function() {
     settings = {
@@ -35,12 +38,11 @@ describe('Analytics', function() {
     };
 
     contextPage = pageDefaults();
-  });
-
-  beforeEach(function() {
     analytics = new Analytics();
     analytics.timeout(0);
     Test = createIntegration('Test');
+    user = analytics.user();
+    group = analytics.group();
   });
 
   afterEach(function() {
@@ -72,7 +74,7 @@ describe('Analytics', function() {
   });
 
   it('should set the _user for backwards compatibility', function() {
-    assert(analytics._user === user);
+    assert(analytics._user);
   });
 
   describe('#use', function() {
@@ -102,16 +104,17 @@ describe('Analytics', function() {
   });
 
   describe('#initialize', function() {
+    let userSpy;
+    let groupSpy;
     beforeEach(function() {
-      sinon.spy(user, 'load');
-      sinon.spy(group, 'load');
+      userSpy = sinon.spy(user, 'load');
+      groupSpy = sinon.spy(group, 'load');
       sinon.spy(metrics, 'increment');
     });
 
     afterEach(function() {
-      user.load.restore();
-      group.load.restore();
-      metrics.increment.restore();
+      user.load();
+      sinon.restore();
     });
 
     it('should gracefully handle integrations that fail to initialize', function() {
@@ -270,12 +273,12 @@ describe('Analytics', function() {
 
     it('should call #load on the user', function() {
       analytics.initialize();
-      assert(user.load.called);
+      assert(userSpy.called);
     });
 
     it('should call #load on the group', function() {
       analytics.initialize();
-      assert(group.load.called);
+      assert(groupSpy.called);
     });
 
     it('should store enabled integrations', function(done) {
@@ -510,7 +513,6 @@ describe('Analytics', function() {
     beforeEach(function() {
       sinon.stub(cookie, 'options');
       sinon.stub(user, 'options');
-      sinon.stub(group, 'options');
       sinon.stub(metrics, 'options');
     });
 
@@ -535,12 +537,12 @@ describe('Analytics', function() {
 
     it('should set user options', function() {
       analytics._options({ user: { option: true } });
-      assert(user.options.calledWith({ option: true }));
+      assert.deepEqual(user.options, { option: true });
     });
 
     it('should set group options', function() {
-      analytics._options({ group: { option: true } });
-      assert(group.options.calledWith({ option: true }));
+      analytics._options({ group: { persist: false } });
+      assert(group.options.persist === false);
     });
   });
 
@@ -553,7 +555,7 @@ describe('Analytics', function() {
       it('should parse `ajs_aid` and set anonymousId', function() {
         sinon.spy(user, 'anonymousId');
         analytics._parseQuery('?ajs_aid=123');
-        assert(user.anonymousId.calledWith('123'));
+        assert(user.anonymousId() === '123');
       });
 
       it('should parse `ajs_uid` and call identify', function() {
@@ -872,13 +874,14 @@ describe('Analytics', function() {
   });
 
   describe('#identify', function() {
+    let spy;
     beforeEach(function() {
       sinon.spy(analytics, '_invoke');
-      sinon.spy(user, 'identify');
+      spy = sinon.spy(user, 'identify');
     });
 
     afterEach(function() {
-      user.identify.restore();
+      spy.restore();
     });
 
     it('should call #_invoke', function() {
@@ -951,12 +954,11 @@ describe('Analytics', function() {
 
     it('should identify the user', function() {
       analytics.identify('id', { trait: true });
-      assert(user.identify.calledWith('id', { trait: true }));
+      assert(spy.calledWith('id', { trait: true }));
     });
 
     it('should back traits with stored traits', function() {
-      user.traits({ one: 1 });
-      user.save();
+      user.traits = { one: 1 };
       analytics.identify('id', { two: 2 });
       var call = analytics._invoke.getCall(0);
       var identify = call.args[1];
@@ -1115,17 +1117,18 @@ describe('Analytics', function() {
   });
 
   describe('#group', function() {
+    let groupSpy;
     beforeEach(function() {
       sinon.spy(analytics, '_invoke');
-      sinon.spy(group, 'identify');
+      groupSpy = sinon.spy(analytics.group(), 'identify');
     });
 
     afterEach(function() {
-      group.identify.restore();
+      sinon.restore();
     });
 
     it('should return the group singleton', function() {
-      assert(analytics.group() === group);
+      assert.equal(analytics.group().id, analytics.group.id);
     });
 
     it('should call #_invoke', function() {
@@ -1197,12 +1200,11 @@ describe('Analytics', function() {
 
     it('should call #identify on the group', function() {
       analytics.group('id', { property: true });
-      assert(group.identify.calledWith('id', { property: true }));
+      assert(groupSpy.calledWith('id', { property: true }));
     });
 
     it('should back properties with stored properties', function() {
-      group.properties({ one: 1 });
-      group.save();
+      group.traits = { one: 1 };
       analytics.group('id', { two: 2 });
       var g = analytics._invoke.args[0][1];
       assert(g.groupId() === 'id');
@@ -2031,22 +2033,22 @@ describe('Analytics', function() {
 
   describe('#reset', function() {
     beforeEach(function() {
-      user.id('user-id');
-      user.traits({ name: 'John Doe' });
-      group.id('group-id');
-      group.traits({ name: 'Example' });
+      user.id = 'user-id';
+      user.traits = { name: 'John Doe' };
+      group.id = 'group-id';
+      group.traits = { name: 'Example' };
     });
 
     it('should remove persisted group and user', function() {
-      assert(user.id() === 'user-id');
-      assert(user.traits().name === 'John Doe');
-      assert(group.id() === 'group-id');
-      assert(group.traits().name === 'Example');
+      assert(user.id === 'user-id');
+      assert(user.traits.name === 'John Doe');
+      assert(group.id === 'group-id');
+      assert(group.traits.name === 'Example');
       analytics.reset();
-      assert(user.id() === null);
-      assert.deepEqual({}, user.traits());
-      assert(group.id() === null);
-      assert.deepEqual({}, group.traits());
+      assert(user.id === null);
+      assert.deepEqual({}, user.traits);
+      assert(group.id === null);
+      assert.deepEqual({}, group.traits);
     });
   });
 

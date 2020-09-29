@@ -1,7 +1,8 @@
 import cloneDeep from 'lodash.clonedeep';
 
 /**
- * Memory is an in-memory data store.
+ * Memory is a type of `interface Storage`.
+ * It is a basic in-memory data store.
  */
 class Memory {
   private readonly store: Record<string, unknown>;
@@ -51,3 +52,4 @@ class Memory {
 }
 
 export default new Memory();
+export { Memory };

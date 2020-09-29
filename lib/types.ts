@@ -1,14 +1,15 @@
 /**
  * @deprecated Use `Analytics` in `lib/analytics.ts`
  */
-import { StoreOptions } from './store';
-import { CookieOptions } from './cookie';
+import { StoreOptions } from './entity/store/local';
+import { CookieOptions } from './entity/store/cookie';
+import { EntityOptions } from './entity';
 
 export interface SegmentAnalytics {
   Integrations: { [name: string]: (options: SegmentOpts) => void };
   options: InitOptions;
-  require: any
-  VERSION: any
+  require: any;
+  VERSION: any;
 
   // Analytics.JS Methods
   page: (
@@ -17,7 +18,7 @@ export interface SegmentAnalytics {
     properties?: any,
     options?: any,
     fn?: unknown
-  ) => void
+  ) => void;
 
   // Private fields
 }
@@ -34,35 +35,15 @@ export interface MetricsOptions {
   maxQueueSize?: number;
 }
 
-export interface UserOptions {
-  cookie?: {
-    key: string;
-    oldKey: string;
-  };
-  localStorage?: {
-    key: string;
-  };
-  persist?: boolean;
-}
-
-export interface GroupOptions {
-  cookie?: {
-    key: string;
-  };
-  localStorage?: {
-    key: string;
-  };
-  persist?: boolean;
-}
-
 export interface InitOptions {
   initialPageview?: boolean;
   cookie?: CookieOptions;
   metrics?: MetricsOptions;
   localStorage?: StoreOptions;
-  user?: UserOptions;
-  group?: GroupOptions;
+  user?: EntityOptions;
+  group?: EntityOptions;
   integrations?: SegmentIntegration;
+  persist?: boolean;
 }
 
 export interface SegmentIntegration {

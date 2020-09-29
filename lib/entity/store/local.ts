@@ -1,11 +1,14 @@
 export interface StoreOptions {
+  key?: string;
   enabled?: boolean;
+
   [key: string]: unknown;
 }
 
 /**
- * Index is a small wrapper around `Storage` with the option to enable or disable the store.
- * Also supports serializing and deserializing `Record<string, unknown>` values as opposed to just `string` values.
+ * Store is a type of `interface Storage`.
+ * It is a small wrapper around `window.localStorage` that supports
+ * serializing and deserializing `Record<string, unknown>` values as opposed to just `string` values.
  */
 class Store {
   public enabled: boolean;
@@ -13,7 +16,8 @@ class Store {
   private store: Storage;
 
   constructor(options?: StoreOptions) {
-    this._options = options;
+    this._options = options ?? {};
+    this.enabled = options?.enabled ?? true;
     this.store = localStorage;
   }
 
@@ -46,17 +50,21 @@ class Store {
    * @param {string} value - the value to store at the given key.
    * @return {void}
    */
-  public set(key: string, value: string | Record<string, unknown>): void {
-    if (!this.enabled) return;
+  public set(key: string, value: string | Record<string, unknown>): boolean {
+    if (!this.enabled) return false;
 
     if (typeof value === 'string') {
-      return this.store.setItem(key, value);
+      this.store.setItem(key, value);
+      return true;
     }
 
     if (typeof value === 'object') {
       const d = window.JSON.stringify(value);
-      return this.store.setItem(key, d);
+      this.store.setItem(key, d);
+      return true;
     }
+
+    return false;
   }
 
   /**
@@ -64,8 +72,8 @@ class Store {
    * @param {string} key - The key holding the value.
    * @return {string | object} - The value for the key.
    */
-  public get(key: string): string | Record<string, unknown> {
-    if (!this.enabled) return null;
+  public get(key: string): string | Record<string, unknown> | undefined {
+    if (!this.enabled) return;
     const item = this.store.getItem(key);
 
     if (!item) {

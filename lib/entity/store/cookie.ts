@@ -12,6 +12,7 @@ const DEFAULTS: CookieOptions = {
 };
 
 export interface CookieOptions {
+  enabled?: boolean;
   maxage?: number;
   domain?: string;
   path?: string;
@@ -20,14 +21,17 @@ export interface CookieOptions {
 }
 
 /**
- * Wrapper around cookie management.
+ * Cookie is a type of `interface Storage`.
+ * It is a wrapper around cookie management.
  */
 class Cookie {
+  public readonly enabled: boolean;
   private readonly debug: Debugger;
   private _options: CookieOptions;
 
-  constructor(options: CookieOptions = {}) {
-    this._options = options;
+  constructor(options?: CookieOptions) {
+    this._options = options ?? DEFAULTS;
+    this.enabled = options?.enabled ?? true;
     this.debug = d('analytics.js:cookie');
   }
 
@@ -100,8 +104,8 @@ class Cookie {
    */
   public get(key: string): Record<string, unknown> | string | null {
     try {
-      let value = cookie(key);
-      value = value ? window.JSON.parse(value) : null;
+      let value: string | undefined = cookie(key);
+      value = window.JSON.parse(value ?? null);
       return value;
     } catch (e) {
       return null;

@@ -9,11 +9,11 @@ import {
 
 import { pageDefaults } from '../pageDefaults';
 import { Analytics } from '../analytics';
-import cookie from '../cookie';
-import user from '../user';
-import group from '../group';
-import store from '../store';
-import memory from '../memory';
+import cookie from '../entity/store/cookie';
+import user from '../entity/user';
+import { default as groupEntity, Group as GroupEntity } from '../entity/group';
+import store from '../entity/store/local';
+import memory from '../entity/store/memory';
 
 import cloneDeep from 'lodash.clonedeep';
 import pick from 'lodash.pick';
@@ -163,7 +163,7 @@ Analytics.prototype.init = Analytics.prototype.initialize = function(
 
   // load user now that options are set
   user.load();
-  group.load();
+  groupEntity.load();
 
   // make ready callback
   var readyCallCount = 0;
@@ -255,7 +255,7 @@ Analytics.prototype.add = function(integration: {
 /**
  * Identify a user by optional `id` and `traits`.
  *
- * @param {string} [id=user.id()] User ID.
+ * @param {string} [id=user.id] User ID.
  * @param {Object} [traits=null] User traits.
  * @param {Object} [options=null]
  * @param {Function} [fn]
@@ -272,17 +272,17 @@ Analytics.prototype.identify = function(
   /* eslint-disable no-unused-expressions, no-sequences */
   if (is.fn(options)) (fn = options), (options = null);
   if (is.fn(traits)) (fn = traits), (options = null), (traits = null);
-  if (is.object(id)) (options = traits), (traits = id), (id = user.id());
+  if (is.object(id)) (options = traits), (traits = id), (id = user.id);
   /* eslint-enable no-unused-expressions, no-sequences */
 
   // clone traits before we manipulate so we don't do anything uncouth, and take
   // from `user` so that we carryover anonymous traits
-  user.identify(id, traits);
+  user.identify(id, traits as Record<string, unknown>);
 
   var msg = this.normalize({
     options: options,
-    traits: user.traits(),
-    userId: user.id()
+    traits: user.traits,
+    userId: user.id
   });
 
   // Add the initialize integrations so the server-side ones can be disabled too
@@ -317,33 +317,35 @@ Analytics.prototype.user = function(): object {
  * Identify a group by optional `id` and `traits`. Or, if no arguments are
  * supplied, return the current group.
  *
+ * @this {SegmentAnalytics}
+ *
  * @param {string} [id=group.id()] Group ID.
  * @param {Object} [traits=null] Group traits.
  * @param {Object} [options=null]
  * @param {Function} [fn]
- * @return {Analytics|Object}
+ * @return {Analytics|GroupEntity}
  */
-
 Analytics.prototype.group = function(
-  id: string,
-  traits?: unknown,
+  id: string | Record<string, unknown>,
+  traits?: Record<string, unknown>,
   options?: unknown,
   fn?: unknown
-): SegmentAnalytics {
+): SegmentAnalytics | GroupEntity {
   /* eslint-disable no-unused-expressions, no-sequences */
-  if (!arguments.length) return group;
+  if (!arguments.length) return groupEntity as GroupEntity;
   if (is.fn(options)) (fn = options), (options = null);
   if (is.fn(traits)) (fn = traits), (options = null), (traits = null);
-  if (is.object(id)) (options = traits), (traits = id), (id = group.id());
+  if (typeof id === 'object')
+    (options = traits), (traits = id), (id = groupEntity.id);
   /* eslint-enable no-unused-expressions, no-sequences */
 
   // grab from group again to make sure we're taking from the source
-  group.identify(id, traits);
+  groupEntity.identify(id, traits);
 
   var msg = this.normalize({
     options: options,
-    traits: group.traits(),
-    groupId: group.id()
+    traits: groupEntity.traits,
+    groupId: groupEntity.id
   });
 
   // Add the initialize integrations so the server-side ones can be disabled too
@@ -360,7 +362,7 @@ Analytics.prototype.group = function(
 
   this.emit('group', id, traits, options);
   this._callback(fn);
-  return this;
+  return this as SegmentAnalytics;
 };
 
 /**
@@ -726,8 +728,8 @@ Analytics.prototype._options = function(
   cookie.options = options.cookie;
   metrics.options(options.metrics);
   store.options = options.localStorage;
-  user.options(options.user);
-  group.options(options.group);
+  user.options = options.user;
+  groupEntity.options = options.group;
   return this;
 };
 
