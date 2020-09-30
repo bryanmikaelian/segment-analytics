@@ -87,11 +87,6 @@ export class Analytics extends Emitter {
   ) => SegmentAnalytics;
 
   // Random util functions
-
-  use: (plugin: (analytics: SegmentAnalytics) => void) => SegmentAnalytics;
-  addIntegration: (
-    Integration: (options: SegmentOpts) => void
-  ) => SegmentAnalytics;
   addSourceMiddleware: (middleware: Function) => SegmentAnalytics;
   addIntegrationMiddleware: (middleware: Function) => SegmentAnalytics;
   addDestinationMiddleware: (
@@ -164,5 +159,23 @@ export class Analytics extends Emitter {
       if (options.initialPageview) this.page();
       this._parseQuery(window.location.search);
     });
+  }
+
+  /**
+   * Use a `plugin`.
+   */
+  use(fn: (analytics: Analytics) => void): Analytics {
+    fn(this);
+    return this;
+  }
+
+  /**
+   * Define a new `Integration`.
+   */
+  addIntegration(Integration: (options: SegmentOpts) => void): Analytics {
+    const name = Integration.prototype.name;
+    if (!name) throw new TypeError('attempted to add an invalid integration');
+    this.Integrations[name] = Integration;
+    return this;
   }
 }
