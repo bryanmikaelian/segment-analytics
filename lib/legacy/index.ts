@@ -15,6 +15,7 @@ import { default as groupEntity, Group as GroupEntity } from '../entity/group';
 import store from '../entity/store/local';
 import memory from '../entity/store/memory';
 import metrics from '../metrics';
+import { normalize, NormalizedMessage } from '../messages';
 
 import cloneDeep from 'lodash.clonedeep';
 import pick from 'lodash.pick';
@@ -38,7 +39,6 @@ var debug = require('debug');
 var is = require('is');
 var isMeta = require('@segment/is-meta');
 var nextTick = require('next-tick');
-var normalize = require('../normalize');
 var on = require('component-event').bind;
 var prevent = require('@segment/prevent-default');
 var querystring = require('component-querystring');
@@ -961,12 +961,12 @@ Analytics.prototype._parseQuery = function(query: string): SegmentAnalytics {
  * Normalize the given `msg`.
  */
 
-Analytics.prototype.normalize = function(msg: {
+Analytics.prototype.normalize = function(message: {
   options: { [key: string]: unknown };
   context: { page: Partial<PageDefaults> };
   anonymousId: string;
-}): object {
-  msg = normalize(msg, Object.keys(this._integrations));
+}): NormalizedMessage {
+  const msg = normalize(message, Object.keys(this._integrations));
   if (msg.anonymousId) user.anonymousId(msg.anonymousId);
   msg.anonymousId = user.anonymousId();
 
