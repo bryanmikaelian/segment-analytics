@@ -51,14 +51,6 @@ export interface SegmentOpts {
   context?: object;
 }
 
-export interface Message {
-  options?: unknown;
-  integrations?: { [key: string]: string };
-  providers?: { [key: string]: string | boolean };
-  context?: unknown;
-  messageId?: string;
-}
-
 export interface PageDefaults {
   path: string;
   referrer: string;

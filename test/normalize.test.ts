@@ -1,5 +1,5 @@
-import assert from 'proclaim'
-const normalize = require('../lib/normalize')
+import assert from 'proclaim';
+import { normalize } from '../lib/messages';
 
 describe('normalize', function() {
   var list = ['Segment', 'KISSmetrics'];
@@ -30,13 +30,14 @@ describe('normalize', function() {
 
   describe('options', function() {
     it('should move all toplevel keys to the message', function() {
-      var date = (opts.timestamp = new Date());
+      const date = (opts.timestamp = new Date());
       opts.anonymousId = 'anonymous-id';
       opts.integrations = { foo: 1 };
       opts.context = { context: 1 };
 
-      var out = normalize(msg, list);
-      assert(out.timestamp.getTime() === date.getTime());
+      const out = normalize(msg, list);
+      const d = out.timestamp as Date;
+      assert(d.getTime() === date.getTime());
       assert(out.anonymousId === 'anonymous-id');
       assert.deepEqual(out.integrations, { foo: 1 });
       assert.deepEqual(out.context, { context: 1 });
@@ -47,7 +48,7 @@ describe('normalize', function() {
       opts.campaign = { name: 'campaign-name' };
       opts.library = 'analytics-wordpress';
       opts.traits = { trait: true };
-      var normalized = normalize(msg, list);
+      const normalized = normalize(msg, list);
 
       assert.lengthEquals(normalized.messageId, 36);
       delete normalized.messageId;
@@ -81,7 +82,7 @@ describe('normalize', function() {
       it('should move to .integrations', function() {
         opts.Segment = true;
         opts.KISSmetrics = false;
-        var normalized = normalize(msg, list);
+        const normalized = normalize(msg, list);
 
         assert.lengthEquals(normalized.messageId, 36);
         delete normalized.messageId;
@@ -316,7 +317,7 @@ describe('normalize', function() {
     var set = {};
     var count = 1000;
     for (var i = 0; i < count; i++) {
-      var id = normalize(msg).messageId;
+      var id = normalize(msg, []).messageId;
       set[id] = true;
     }
     assert.lengthEquals(Object.keys(set), count);

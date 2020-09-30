@@ -1,7 +1,11 @@
-import assert from 'proclaim'
-import Facade from 'segmentio-facade'
+import assert from 'proclaim';
+import Facade from 'segmentio-facade';
 
-import { middlewareChain, SourceMiddlewareChain, IntegrationMiddlewareChain } from '../lib/middleware';
+import {
+  middlewareChain,
+  SourceMiddlewareChain,
+  IntegrationMiddlewareChain
+} from '../lib/middleware';
 
 describe('middlewareChain', function() {
   var chain;
