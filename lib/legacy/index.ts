@@ -7,7 +7,7 @@ import {
   PageDefaults
 } from '../types';
 
-import { pageDefaults } from '../pageDefaults';
+import { pageDefaults } from '../page';
 import { Analytics } from '../analytics';
 import cookie from '../entity/store/cookie';
 import user from '../entity/user';

@@ -3,7 +3,7 @@ import assignIn from 'lodash.assignin';
 
 import { Analytics } from '../../lib/analytics';
 import cookie from '../../lib/entity/store/cookie';
-import { pageDefaults } from '../../lib/pageDefaults';
+import { pageDefaults } from '../../lib/page';
 import { store as s, metrics as m } from '../../lib/legacy';
 import { User } from '../../lib/entity/user';
 import { Group } from '../../lib/entity/group';
