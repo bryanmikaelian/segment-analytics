@@ -45,30 +45,6 @@ var querystring = require('component-querystring');
 var type = require('component-type');
 
 /**
- * Use a `plugin`.
- */
-
-Analytics.prototype.use = function(
-  plugin: (analytics: SegmentAnalytics) => void
-): SegmentAnalytics {
-  plugin(this);
-  return this;
-};
-
-/**
- * Define a new `Integration`.
- */
-
-Analytics.prototype.addIntegration = function(
-  Integration: (options: SegmentOpts) => void
-): SegmentAnalytics {
-  var name = Integration.prototype.name;
-  if (!name) throw new TypeError('attempted to add an invalid integration');
-  this.Integrations[name] = Integration;
-  return this;
-};
-
-/**
  * Define a new `SourceMiddleware`
  */
 
