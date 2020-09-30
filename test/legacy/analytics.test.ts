@@ -413,7 +413,7 @@ describe('Analytics', function() {
     });
 
     afterEach(function() {
-      metrics.increment.restore();
+      sinon.restore();
     });
 
     it('should invoke a method on integration with facade', function() {
@@ -510,10 +510,11 @@ describe('Analytics', function() {
   });
 
   describe('#_options', function() {
+    let stub;
     beforeEach(function() {
       sinon.stub(cookie, 'options');
       sinon.stub(user, 'options');
-      sinon.stub(metrics, 'options');
+      stub = sinon.stub(metrics, 'options');
     });
 
     afterEach(function() {
@@ -527,7 +528,7 @@ describe('Analytics', function() {
 
     it('should set metrics options', function() {
       analytics._options({ metrics: { option: true } });
-      assert(metrics.options.calledWith({ option: true }));
+      assert(stub.calledWith({ option: true }));
     });
 
     it('should set store options', function() {

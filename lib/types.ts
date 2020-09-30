@@ -4,6 +4,7 @@
 import { StoreOptions } from './entity/store/local';
 import { CookieOptions } from './entity/store/cookie';
 import { EntityOptions } from './entity';
+import { MetricsOptions } from './metrics';
 
 export interface SegmentAnalytics {
   Integrations: { [name: string]: (options: SegmentOpts) => void };
@@ -26,13 +27,6 @@ export interface SegmentAnalytics {
 export interface IntegrationsSettings {
   // TODO remove `any`
   [key: string]: any;
-}
-
-export interface MetricsOptions {
-  host?: string;
-  sampleRate?: number;
-  flushTimer?: number;
-  maxQueueSize?: number;
 }
 
 export interface InitOptions {

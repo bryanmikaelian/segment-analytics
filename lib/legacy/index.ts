@@ -14,6 +14,7 @@ import user from '../entity/user';
 import { default as groupEntity, Group as GroupEntity } from '../entity/group';
 import store from '../entity/store/local';
 import memory from '../entity/store/memory';
+import metrics from '../metrics';
 
 import cloneDeep from 'lodash.clonedeep';
 import pick from 'lodash.pick';
@@ -33,7 +34,6 @@ var DestinationMiddlewareChain = require('../middleware')
 var Page = require('segmentio-facade').Page;
 var Track = require('segmentio-facade').Track;
 var extend = require('extend');
-var metrics = require('../metrics');
 var debug = require('debug');
 var is = require('is');
 var isMeta = require('@segment/is-meta');
