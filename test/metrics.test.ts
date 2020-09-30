@@ -1,14 +1,16 @@
-import assert from 'proclaim'
-import sinon from 'sinon'
-import send from '@segment/send-json'
-import { metrics } from '../lib/legacy'
+import assert from 'proclaim';
+import sinon from 'sinon';
+import send from '@segment/send-json';
+import { Metrics } from '../lib/metrics';
 
 describe('metrics', function() {
-  var xhr;
-  var spy;
+  let xhr;
+  let spy;
+  let metrics;
 
   beforeEach(function() {
     xhr = sinon.useFakeXMLHttpRequest();
+    metrics = new Metrics();
 
     spy = sinon.spy();
     xhr.onCreate = spy;
@@ -16,35 +18,36 @@ describe('metrics', function() {
 
   afterEach(function() {
     metrics.options({});
+    metrics.queue = [];
 
     if (xhr.restore) xhr.restore();
   });
 
   describe('#increment', function() {
     it('should not enqueue items by default', function() {
-      metrics.increment('test', []);
+      metrics.increment('test', {});
 
-      assert.deepEqual(metrics.queue, []);
+      assert.deepEqual(metrics.queue, {});
     });
 
     it('should enqueue items when sampleRate is set', function() {
       metrics.options({ sampleRate: 1 });
 
-      metrics.increment('test', []);
+      metrics.increment('test', {});
 
       assert.deepEqual(metrics.queue, [
-        { type: 'Counter', metric: 'test', value: 1, tags: [] }
+        { type: 'Counter', metric: 'test', value: 1, tags: {} }
       ]);
     });
   });
 
-  describe('#_flush', function() {
+  describe('#flush()', function() {
     beforeEach(function() {
       metrics.options({ sampleRate: 1 });
     });
 
     it('should not make a request if queue is empty', function() {
-      metrics._flush();
+      metrics.flush();
 
       sinon.assert.notCalled(spy);
     });
@@ -54,7 +57,7 @@ describe('metrics', function() {
 
       metrics.increment('foo', {});
 
-      metrics._flush();
+      metrics.flush();
 
       sinon.assert.calledOnce(spy);
       var req = spy.getCall(0).args[0];
@@ -71,7 +74,7 @@ describe('metrics', function() {
       metrics.increment('test1', { foo: 'bar' });
       metrics.increment('test2', {});
 
-      metrics._flush();
+      metrics.flush();
 
       sinon.assert.calledOnce(spy);
       var req = spy.getCall(0).args[0];
@@ -87,7 +90,7 @@ describe('metrics', function() {
 
       metrics.increment('foo', {});
 
-      metrics._flush();
+      metrics.flush();
 
       sinon.assert.notCalled(spy);
     });
@@ -98,7 +101,7 @@ describe('metrics', function() {
       metrics.increment('test1', { foo: 'bar' });
       metrics.increment('test2', {});
 
-      metrics._flush();
+      metrics.flush();
 
       sinon.assert.notCalled(spy);
     });
@@ -106,7 +109,7 @@ describe('metrics', function() {
     it('should empty the queue', function() {
       metrics.increment('test1', { foo: 'bar' });
 
-      metrics._flush();
+      metrics.flush();
 
       assert.deepEqual(metrics.queue, []);
     });
