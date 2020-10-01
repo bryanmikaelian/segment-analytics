@@ -17,6 +17,15 @@ import {
 } from './middleware';
 import user from './entity/user';
 import { Group } from './entity/group';
+import * as qs from 'query-string';
+import { ParsedQuery } from 'query-string';
+
+interface AnalyticsQueryString {
+  ajs_uid?: string;
+  ajs_aid?: string;
+  ajs_event?: string;
+  [key: string]: unknown;
+}
 
 export class Analytics extends Emitter {
   public readonly VERSION: string;
@@ -131,7 +140,6 @@ export class Analytics extends Emitter {
   ) => object;
   _options: (opts: InitOptions) => SegmentAnalytics;
   _invoke: (method: string, facade: unknown) => SegmentAnalytics;
-  _parseQuery: (query: string) => SegmentAnalytics;
 
   constructor() {
     super();
@@ -211,6 +219,45 @@ export class Analytics extends Emitter {
       return this;
     }
     this._timeout ? setTimeout(fn, this._timeout) : nextTick(fn);
+    return this;
+  }
+
+  /**
+   * Parse the query string for callable methods.
+   *
+   * @api private
+   */
+  private _parseQuery(query: string): Analytics {
+    // Parse querystring to an object
+    const q = (qs.parse(query) as unknown) as ParsedQuery<AnalyticsQueryString>;
+    const keys = Object.keys(q);
+    const results = { traits: {}, props: {} };
+
+    keys.forEach(p => {
+      if (p.includes('ajs_trait_')) {
+        const key = p.replace('ajs_trait_', '');
+        results.traits[key] = q[p];
+      }
+
+      if (p.includes('ajs_prop_')) {
+        const key = p.replace('ajs_prop_', '');
+        results.props[key] = q[p];
+      }
+    });
+
+    const { traits, props } = results;
+
+    // Trigger based on callable parameters in the URL
+    if (q.ajs_uid && typeof q.ajs_uid === 'string') {
+      this.identify(q.ajs_uid, traits);
+    }
+    if (q.ajs_event && typeof q.ajs_event === 'string') {
+      this.track(q.ajs_event, props);
+    }
+    if (q.ajs_aid && typeof q.ajs_aid === 'string') {
+      this.user.anonymousId(q.ajs_aid);
+    }
+
     return this;
   }
 }
