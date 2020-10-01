@@ -34,10 +34,8 @@ var DestinationMiddlewareChain = require('../middleware')
 var Page = require('segmentio-facade').Page;
 var Track = require('segmentio-facade').Track;
 var extend = require('extend');
-var debug = require('debug');
 var is = require('is');
 var isMeta = require('@segment/is-meta');
-var nextTick = require('next-tick');
 var on = require('component-event').bind;
 var prevent = require('@segment/prevent-default');
 var querystring = require('component-querystring');
@@ -645,21 +643,6 @@ Analytics.prototype.alias = function(
 };
 
 /**
- * Register a `fn` to be fired when all the analytics services are ready.
- */
-
-Analytics.prototype.ready = function(fn: Function): SegmentAnalytics {
-  if (is.fn(fn)) {
-    if (this._readied) {
-      nextTick(fn);
-    } else {
-      this.once('ready', fn);
-    }
-  }
-  return this;
-};
-
-/**
  * Apply options.
  * @api private
  */
@@ -682,13 +665,6 @@ Analytics.prototype._options = function(
  * Callback a `fn` after our defined timeout period.
  * @api private
  */
-
-Analytics.prototype._callback = function(fn: Function): SegmentAnalytics {
-  if (is.fn(fn)) {
-    this._timeout ? setTimeout(fn, this._timeout) : nextTick(fn);
-  }
-  return this;
-};
 
 /**
  * Call `method` with `facade` on all enabled integrations.

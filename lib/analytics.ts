@@ -1,5 +1,6 @@
 import { Debug, debug as d, Debugger } from 'debug';
 import Emitter from 'component-emitter';
+import nextTick from 'next-tick';
 
 import { version } from '../package.json';
 import {
@@ -94,7 +95,6 @@ export class Analytics extends Emitter {
   setAnonymousId: (id: string) => SegmentAnalytics;
   add: (integration: { name: string | number }) => SegmentAnalytics;
   pageview: (url: string) => SegmentAnalytics;
-  ready: (fn: Function) => SegmentAnalytics;
   reset: () => void;
   normalize: (
     msg: {
@@ -130,7 +130,6 @@ export class Analytics extends Emitter {
     planIntegrations: SegmentIntegration
   ) => object;
   _options: (opts: InitOptions) => SegmentAnalytics;
-  _callback: (fn: Function) => SegmentAnalytics;
   _invoke: (method: string, facade: unknown) => SegmentAnalytics;
   _parseQuery: (query: string) => SegmentAnalytics;
 
@@ -189,5 +188,29 @@ export class Analytics extends Emitter {
     } else {
       this._debug.disable();
     }
+  }
+
+  /**
+   * Register a `fn` to be fired when all the analytics services are ready.
+   */
+  ready(fn?: () => void): Analytics {
+    if (!fn) {
+      return this;
+    }
+
+    if (this._readied) {
+      nextTick(fn);
+    } else {
+      this.once('ready', fn);
+    }
+    return this;
+  }
+
+  private _callback(fn?: () => void): Analytics {
+    if (!fn) {
+      return this;
+    }
+    this._timeout ? setTimeout(fn, this._timeout) : nextTick(fn);
+    return this;
   }
 }
