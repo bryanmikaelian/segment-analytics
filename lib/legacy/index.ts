@@ -660,26 +660,6 @@ Analytics.prototype.ready = function(fn: Function): SegmentAnalytics {
 };
 
 /**
- * Set the `timeout` (in milliseconds) used for callbacks.
- */
-
-Analytics.prototype.timeout = function(timeout: number) {
-  this._timeout = timeout;
-};
-
-/**
- * Enable or disable debug.
- */
-
-Analytics.prototype.debug = function(str: string | boolean) {
-  if (!arguments.length || str) {
-    debug.enable('analytics:' + (str || '*'));
-  } else {
-    debug.disable();
-  }
-};
-
-/**
  * Apply options.
  * @api private
  */
