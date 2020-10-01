@@ -41,7 +41,7 @@ describe('Analytics', function() {
     analytics = new Analytics();
     analytics.timeout(0);
     Test = createIntegration('Test');
-    user = analytics.user();
+    user = analytics.user;
     group = analytics.group();
   });
 
@@ -73,10 +73,6 @@ describe('Analytics', function() {
     assert(analytics._timeout === 300);
   });
 
-  it('should set the _user for backwards compatibility', function() {
-    assert(analytics._user);
-  });
-
   describe('#use', function() {
     it('should work', function(done) {
       analytics.use(function(singleton) {
@@ -95,10 +91,10 @@ describe('Analytics', function() {
 
   describe('#setAnonymousId', function() {
     it("should set the user's anonymous id", function() {
-      var prev = analytics.user().anonymousId();
+      var prev = analytics.user.anonymousId();
       assert(prev.length === 36);
       analytics.setAnonymousId('new-id');
-      var curr = analytics.user().anonymousId();
+      var curr = analytics.user.anonymousId();
       assert(curr === 'new-id');
     });
   });
@@ -1113,7 +1109,7 @@ describe('Analytics', function() {
 
   describe('#user', function() {
     it('should return the user singleton', function() {
-      assert(analytics.user() === user);
+      assert(analytics.user === user);
     });
   });
 

@@ -14,7 +14,7 @@ import {
   SourceMiddlewareChain,
   IntegrationMiddlewareChain
 } from './middleware';
-import user from './entity/user';
+import user, { User } from './entity/user';
 import { Group } from './entity/group';
 
 export class Analytics extends Emitter {
@@ -24,10 +24,7 @@ export class Analytics extends Emitter {
     [name: string]: (options: SegmentOpts) => void;
   };
   public options: SegmentOpts;
-
-  // XXX: BACKWARDS COMPATIBILITY
-  // TODO: Determine if we even need this anymore
-  public _user: unknown;
+  public readonly user = user;
 
   private _sourceMiddlewares: unknown;
   private _integrationMiddlewares: unknown;
@@ -95,7 +92,6 @@ export class Analytics extends Emitter {
   ) => SegmentAnalytics;
   setAnonymousId: (id: string) => SegmentAnalytics;
   add: (integration: { name: string | number }) => SegmentAnalytics;
-  user: () => object;
   pageview: (url: string) => SegmentAnalytics;
   ready: (fn: Function) => SegmentAnalytics;
   timeout: (timeout: number) => void;
@@ -151,8 +147,6 @@ export class Analytics extends Emitter {
     this._integrations = {};
     this._readied = false;
     this._timeout = 300;
-    // XXX: BACKWARDS COMPATIBILITY
-    this._user = user;
     this.log = debug('analytics.js');
 
     this.on('initialize', (_, options) => {
