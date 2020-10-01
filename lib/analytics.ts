@@ -1,5 +1,6 @@
-import { debug } from 'debug';
+import { Debug, debug as d, Debugger } from 'debug';
 import Emitter from 'component-emitter';
+import nextTick from 'next-tick';
 
 import { version } from '../package.json';
 import {
@@ -19,15 +20,12 @@ import { Group } from './entity/group';
 
 export class Analytics extends Emitter {
   public readonly VERSION: string;
-  public readonly log: (args: string) => void;
+  public readonly log: Debugger;
   public readonly Integrations: {
     [name: string]: (options: SegmentOpts) => void;
   };
   public options: SegmentOpts;
-
-  // XXX: BACKWARDS COMPATIBILITY
-  // TODO: Determine if we even need this anymore
-  public _user: unknown;
+  public readonly user = user;
 
   private _sourceMiddlewares: unknown;
   private _integrationMiddlewares: unknown;
@@ -35,6 +33,7 @@ export class Analytics extends Emitter {
   private _integrations: unknown;
   private _readied: boolean;
   private _timeout: number;
+  private _debug: Debug;
 
   // TODO: These functions are all prototyped in legacy/index.ts.  Eventually migrate them to here
 
@@ -95,11 +94,7 @@ export class Analytics extends Emitter {
   ) => SegmentAnalytics;
   setAnonymousId: (id: string) => SegmentAnalytics;
   add: (integration: { name: string | number }) => SegmentAnalytics;
-  user: () => object;
   pageview: (url: string) => SegmentAnalytics;
-  ready: (fn: Function) => SegmentAnalytics;
-  timeout: (timeout: number) => void;
-  debug: (str: string | boolean) => void;
   reset: () => void;
   normalize: (
     msg: {
@@ -135,7 +130,6 @@ export class Analytics extends Emitter {
     planIntegrations: SegmentIntegration
   ) => object;
   _options: (opts: InitOptions) => SegmentAnalytics;
-  _callback: (fn: Function) => SegmentAnalytics;
   _invoke: (method: string, facade: unknown) => SegmentAnalytics;
   _parseQuery: (query: string) => SegmentAnalytics;
 
@@ -151,9 +145,8 @@ export class Analytics extends Emitter {
     this._integrations = {};
     this._readied = false;
     this._timeout = 300;
-    // XXX: BACKWARDS COMPATIBILITY
-    this._user = user;
-    this.log = debug('analytics.js');
+    this.log = d('analytics.js');
+    this._debug = d;
 
     this.on('initialize', (_, options) => {
       if (options.initialPageview) this.page();
@@ -176,6 +169,48 @@ export class Analytics extends Emitter {
     const name = Integration.prototype.name;
     if (!name) throw new TypeError('attempted to add an invalid integration');
     this.Integrations[name] = Integration;
+    return this;
+  }
+
+  /**
+   * Set the `timeout` (in milliseconds) used for callbacks.
+   */
+  timeout(timeout: number): void {
+    this._timeout = timeout;
+  }
+
+  /**
+   * Enable or disable debug.
+   */
+  debug(enable: boolean): void {
+    if (enable) {
+      this._debug.enable('analytics:*');
+    } else {
+      this._debug.disable();
+    }
+  }
+
+  /**
+   * Register a `fn` to be fired when all the analytics services are ready.
+   */
+  ready(fn?: () => void): Analytics {
+    if (!fn) {
+      return this;
+    }
+
+    if (this._readied) {
+      nextTick(fn);
+    } else {
+      this.once('ready', fn);
+    }
+    return this;
+  }
+
+  private _callback(fn?: () => void): Analytics {
+    if (!fn) {
+      return this;
+    }
+    this._timeout ? setTimeout(fn, this._timeout) : nextTick(fn);
     return this;
   }
 }

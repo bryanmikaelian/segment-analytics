@@ -10,7 +10,6 @@ import {
 import { pageDefaults } from '../page';
 import { Analytics } from '../analytics';
 import cookie from '../entity/store/cookie';
-import user from '../entity/user';
 import { default as groupEntity, Group as GroupEntity } from '../entity/group';
 import store from '../entity/store/local';
 import memory from '../entity/store/memory';
@@ -35,10 +34,8 @@ var DestinationMiddlewareChain = require('../middleware')
 var Page = require('segmentio-facade').Page;
 var Track = require('segmentio-facade').Track;
 var extend = require('extend');
-var debug = require('debug');
 var is = require('is');
 var isMeta = require('@segment/is-meta');
-var nextTick = require('next-tick');
 var on = require('component-event').bind;
 var prevent = require('@segment/prevent-default');
 var querystring = require('component-querystring');
@@ -138,7 +135,7 @@ Analytics.prototype.init = Analytics.prototype.initialize = function(
   var integrations = this._integrations;
 
   // load user now that options are set
-  user.load();
+  this.user.load();
   groupEntity.load();
 
   // make ready callback
@@ -213,7 +210,7 @@ Analytics.prototype.init = Analytics.prototype.initialize = function(
  */
 
 Analytics.prototype.setAnonymousId = function(id: string): SegmentAnalytics {
-  this.user().anonymousId(id);
+  this.user.anonymousId(id);
   return this;
 };
 
@@ -248,17 +245,17 @@ Analytics.prototype.identify = function(
   /* eslint-disable no-unused-expressions, no-sequences */
   if (is.fn(options)) (fn = options), (options = null);
   if (is.fn(traits)) (fn = traits), (options = null), (traits = null);
-  if (is.object(id)) (options = traits), (traits = id), (id = user.id);
+  if (is.object(id)) (options = traits), (traits = id), (id = this.user.id);
   /* eslint-enable no-unused-expressions, no-sequences */
 
   // clone traits before we manipulate so we don't do anything uncouth, and take
   // from `user` so that we carryover anonymous traits
-  user.identify(id, traits as Record<string, unknown>);
+  this.user.identify(id, traits as Record<string, unknown>);
 
   var msg = this.normalize({
     options: options,
-    traits: user.traits,
-    userId: user.id
+    traits: this.user.traits,
+    userId: this.user.id
   });
 
   // Add the initialize integrations so the server-side ones can be disabled too
@@ -277,16 +274,6 @@ Analytics.prototype.identify = function(
   this.emit('identify', id, traits, options);
   this._callback(fn);
   return this;
-};
-
-/**
- * Return the current user.
- *
- * @return {Object}
- */
-
-Analytics.prototype.user = function(): object {
-  return user;
 };
 
 /**
@@ -656,41 +643,6 @@ Analytics.prototype.alias = function(
 };
 
 /**
- * Register a `fn` to be fired when all the analytics services are ready.
- */
-
-Analytics.prototype.ready = function(fn: Function): SegmentAnalytics {
-  if (is.fn(fn)) {
-    if (this._readied) {
-      nextTick(fn);
-    } else {
-      this.once('ready', fn);
-    }
-  }
-  return this;
-};
-
-/**
- * Set the `timeout` (in milliseconds) used for callbacks.
- */
-
-Analytics.prototype.timeout = function(timeout: number) {
-  this._timeout = timeout;
-};
-
-/**
- * Enable or disable debug.
- */
-
-Analytics.prototype.debug = function(str: string | boolean) {
-  if (!arguments.length || str) {
-    debug.enable('analytics:' + (str || '*'));
-  } else {
-    debug.disable();
-  }
-};
-
-/**
  * Apply options.
  * @api private
  */
@@ -704,7 +656,7 @@ Analytics.prototype._options = function(
   cookie.options = options.cookie;
   metrics.options(options.metrics);
   store.options = options.localStorage;
-  user.options = options.user;
+  this.user.options = options.user;
   groupEntity.options = options.group;
   return this;
 };
@@ -713,13 +665,6 @@ Analytics.prototype._options = function(
  * Callback a `fn` after our defined timeout period.
  * @api private
  */
-
-Analytics.prototype._callback = function(fn: Function): SegmentAnalytics {
-  if (is.fn(fn)) {
-    this._timeout ? setTimeout(fn, this._timeout) : nextTick(fn);
-  }
-  return this;
-};
 
 /**
  * Call `method` with `facade` on all enabled integrations.
@@ -890,7 +835,7 @@ Analytics.prototype.push = function(args: any[]) {
  */
 
 Analytics.prototype.reset = function() {
-  this.user().logout();
+  this.user.logout();
   this.group().logout();
 };
 
@@ -909,7 +854,7 @@ Analytics.prototype._parseQuery = function(query: string): SegmentAnalytics {
   // Trigger based on callable parameters in the URL
   if (q.ajs_uid) this.identify(q.ajs_uid, traits);
   if (q.ajs_event) this.track(q.ajs_event, props);
-  if (q.ajs_aid) user.anonymousId(q.ajs_aid);
+  if (q.ajs_aid) this.user.anonymousId(q.ajs_aid);
   return this;
 
   /**
@@ -943,8 +888,8 @@ Analytics.prototype.normalize = function(message: {
   anonymousId: string;
 }): NormalizedMessage {
   const msg = normalize(message, Object.keys(this._integrations));
-  if (msg.anonymousId) user.anonymousId(msg.anonymousId);
-  msg.anonymousId = user.anonymousId();
+  if (msg.anonymousId) this.user.anonymousId(msg.anonymousId);
+  msg.anonymousId = this.user.anonymousId();
 
   // Ensure all outgoing requests include page data in their contexts.
   msg.context.page = {

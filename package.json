@@ -77,6 +77,7 @@
     "@types/lodash.includes": "^4.3.6",
     "@types/lodash.pick": "^4.4.6",
     "@types/mocha": "^7.0.2",
+    "@types/next-tick": "^1.0.0",
     "@types/node": "^14.0.6",
     "@types/node-fetch": "^2.5.7",
     "@types/proclaim": "^3.6.1",
