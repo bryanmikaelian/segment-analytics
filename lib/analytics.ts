@@ -1,12 +1,12 @@
 import { Debug, debug as d, Debugger } from 'debug';
 import Emitter from 'component-emitter';
 import nextTick from 'next-tick';
+import extend from 'extend';
 
 import { version } from '../package.json';
 import {
   InitOptions,
   IntegrationsSettings,
-  PageDefaults,
   SegmentAnalytics,
   SegmentIntegration,
   SegmentOpts
@@ -16,9 +16,14 @@ import {
   IntegrationMiddlewareChain
 } from './middleware';
 import user from './entity/user';
-import { Group } from './entity/group';
+import { default as groupEntity, Group } from './entity/group';
 import * as qs from 'query-string';
 import { ParsedQuery } from 'query-string';
+import { Message, normalize, NormalizedMessage } from './messages';
+import { pageDefaults } from './page';
+import cookie from './entity/store/cookie';
+import metrics from './metrics';
+import store from './entity/store/local';
 
 interface AnalyticsQueryString {
   ajs_uid?: string;
@@ -81,7 +86,7 @@ export class Analytics extends Emitter {
 
   // TODO: A Segment `GROUP` call should be inndependent of the current group
   group: (
-    id: string,
+    id?: string,
     traits?: unknown,
     options?: unknown,
     fn?: unknown
@@ -101,18 +106,7 @@ export class Analytics extends Emitter {
     integrationName: string,
     middlewares: Array<unknown>
   ) => SegmentAnalytics;
-  setAnonymousId: (id: string) => SegmentAnalytics;
-  add: (integration: { name: string | number }) => SegmentAnalytics;
   pageview: (url: string) => SegmentAnalytics;
-  reset: () => void;
-  normalize: (
-    msg: {
-      options: { [key: string]: unknown };
-      context: { page: Partial<PageDefaults> };
-      anonymousId: string;
-    }
-  ) => object;
-  noConflict: () => SegmentAnalytics;
   trackClick: (
     forms: Element | Array<unknown> | JQuery,
     event: any,
@@ -135,10 +129,6 @@ export class Analytics extends Emitter {
   ) => SegmentAnalytics;
   push: (args: any[]) => void;
 
-  _mergeInitializeAndPlanIntegrations: (
-    planIntegrations: SegmentIntegration
-  ) => object;
-  _options: (opts: InitOptions) => SegmentAnalytics;
   _invoke: (method: string, facade: unknown) => SegmentAnalytics;
 
   constructor() {
@@ -167,6 +157,14 @@ export class Analytics extends Emitter {
    */
   use(fn: (analytics: Analytics) => void): Analytics {
     fn(this);
+    return this;
+  }
+
+  /**
+   * Add an integration.
+   */
+  add(integration: { name: string | number }): Analytics {
+    this._integrations[integration.name] = integration;
     return this;
   }
 
@@ -211,6 +209,49 @@ export class Analytics extends Emitter {
     } else {
       this.once('ready', fn);
     }
+    return this;
+  }
+
+  /**
+   * Reset group and user traits and id's.
+   */
+  reset(): void {
+    this.user.logout();
+    (this.group() as Group).logout();
+  }
+
+  /**
+   * Normalize the given `msg`.
+   *
+   * @return {NormalizedMessage}
+   */
+  normalize(message: Message): NormalizedMessage {
+    const msg = normalize(message, Object.keys(this._integrations));
+    if (msg.anonymousId) this.user.anonymousId(msg.anonymousId);
+    msg.anonymousId = this.user.anonymousId();
+
+    // Ensure all outgoing requests include page data in their contexts.
+    msg.context.page = {
+      ...pageDefaults(),
+      ...msg.context.page
+    };
+
+    return msg;
+  }
+  /**
+   * Set the user's `id`.
+   */
+
+  setAnonymousId(id: string): Analytics {
+    this.user.anonymousId(id);
+    return this;
+  }
+
+  /**
+   * No conflict support.
+   */
+  noConflict(): Analytics {
+    window.analytics = global.analytics;
     return this;
   }
 
@@ -259,5 +300,55 @@ export class Analytics extends Emitter {
     }
 
     return this;
+  }
+
+  /**
+   * Apply options.
+   */
+  private _options(options: InitOptions): Analytics {
+    options = options || {};
+    this.options = options;
+    cookie.options = options.cookie;
+    metrics.options(options.metrics);
+    store.options = options.localStorage;
+    this.user.options = options.user;
+    groupEntity.options = options.group;
+    return this;
+  }
+
+  /**
+   * Merges the tracking plan and initialization integration options.
+   *
+   * @param  {Object} planIntegrations Tracking plan integrations.
+   * @return {Object}                  The merged integrations.
+   */
+  private _mergeInitializeAndPlanIntegrations(
+    planIntegrations: SegmentIntegration
+  ): Record<string, unknown> {
+    // Do nothing if there are no initialization integrations
+    if (!this.options.integrations) {
+      return planIntegrations;
+    }
+
+    // Clone the initialization integrations
+    let integrations = extend({}, this.options.integrations);
+    let integrationName: string;
+
+    // Allow the tracking plan to disable integrations that were explicitly
+    // enabled on initialization
+    if (planIntegrations.All === false) {
+      integrations = { All: false };
+    }
+
+    for (integrationName in planIntegrations) {
+      if (planIntegrations.hasOwnProperty(integrationName)) {
+        // Don't allow the tracking plan to re-enable disabled integrations
+        if (this.options.integrations[integrationName] !== false) {
+          integrations[integrationName] = planIntegrations[integrationName];
+        }
+      }
+    }
+
+    return integrations;
   }
 }
