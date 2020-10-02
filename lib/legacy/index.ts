@@ -38,7 +38,6 @@ var is = require('is');
 var isMeta = require('@segment/is-meta');
 var on = require('component-event').bind;
 var prevent = require('@segment/prevent-default');
-var querystring = require('component-querystring');
 var type = require('component-type');
 
 /**
@@ -837,45 +836,6 @@ Analytics.prototype.push = function(args: any[]) {
 Analytics.prototype.reset = function() {
   this.user.logout();
   this.group().logout();
-};
-
-/**
- * Parse the query string for callable methods.
- *
- * @api private
- */
-
-Analytics.prototype._parseQuery = function(query: string): SegmentAnalytics {
-  // Parse querystring to an object
-  var q = querystring.parse(query);
-  // Create traits and properties objects, populate from querysting params
-  var traits = pickPrefix('ajs_trait_', q);
-  var props = pickPrefix('ajs_prop_', q);
-  // Trigger based on callable parameters in the URL
-  if (q.ajs_uid) this.identify(q.ajs_uid, traits);
-  if (q.ajs_event) this.track(q.ajs_event, props);
-  if (q.ajs_aid) this.user.anonymousId(q.ajs_aid);
-  return this;
-
-  /**
-   * Create a shallow copy of an input object containing only the properties
-   * whose keys are specified by a prefix, stripped of that prefix
-   *
-   * @return {Object}
-   * @api private
-   */
-
-  function pickPrefix(prefix: string, object: object) {
-    var length = prefix.length;
-    var sub;
-    return Object.keys(object).reduce(function(acc, key) {
-      if (key.substr(0, length) === prefix) {
-        sub = key.substr(length);
-        acc[sub] = object[key];
-      }
-      return acc;
-    }, {});
-  }
 };
 
 /**
