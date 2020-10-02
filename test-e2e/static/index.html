@@ -79,7 +79,8 @@
                 return function () {
                   var e = Array.prototype.slice.call(arguments);
                   e.unshift(t);
-                  analytics.push(e);
+                  if (!this[e]) return;
+                  this[e].apply(this, args);
                   return analytics;
                 };
               };

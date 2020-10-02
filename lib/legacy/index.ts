@@ -2,9 +2,7 @@ import {
   IntegrationsSettings,
   InitOptions,
   SegmentAnalytics,
-  SegmentOpts,
-  SegmentIntegration,
-  PageDefaults
+  SegmentOpts
 } from '../types';
 
 import { pageDefaults } from '../page';
@@ -14,12 +12,9 @@ import { default as groupEntity, Group as GroupEntity } from '../entity/group';
 import store from '../entity/store/local';
 import memory from '../entity/store/memory';
 import metrics from '../metrics';
-import { normalize, NormalizedMessage } from '../messages';
 
 import cloneDeep from 'lodash.clonedeep';
 import pick from 'lodash.pick';
-
-var _analytics = global.analytics;
 
 /*
  * Module dependencies.
@@ -201,26 +196,6 @@ Analytics.prototype.init = Analytics.prototype.initialize = function(
   this.initialized = true;
 
   this.emit('initialize', settings, options);
-  return this;
-};
-
-/**
- * Set the user's `id`.
- */
-
-Analytics.prototype.setAnonymousId = function(id: string): SegmentAnalytics {
-  this.user.anonymousId(id);
-  return this;
-};
-
-/**
- * Add an integration.
- */
-
-Analytics.prototype.add = function(integration: {
-  name: string | number;
-}): SegmentAnalytics {
-  this._integrations[integration.name] = integration;
   return this;
 };
 
@@ -642,30 +617,6 @@ Analytics.prototype.alias = function(
 };
 
 /**
- * Apply options.
- * @api private
- */
-
-// TODO: We need to pass these various entities around instead globally modifying the import
-Analytics.prototype._options = function(
-  options: InitOptions
-): SegmentAnalytics {
-  options = options || {};
-  this.options = options;
-  cookie.options = options.cookie;
-  metrics.options(options.metrics);
-  store.options = options.localStorage;
-  this.user.options = options.user;
-  groupEntity.options = options.group;
-  return this;
-};
-
-/**
- * Callback a `fn` after our defined timeout period.
- * @api private
- */
-
-/**
  * Call `method` with `facade` on all enabled integrations.
  *
  * @param {string} method
@@ -673,7 +624,6 @@ Analytics.prototype._options = function(
  * @return {Analytics}
  * @api private
  */
-
 Analytics.prototype._invoke = function(
   method: string,
   facade: unknown
@@ -812,97 +762,6 @@ Analytics.prototype._invoke = function(
       }
     });
   }
-};
-
-/**
- * Push `args`.
- *
- * @param {Array} args
- * @api private
- */
-
-Analytics.prototype.push = function(args: any[]) {
-  var method = args.shift();
-  if (!this[method]) return;
-  this[method].apply(this, args);
-};
-
-/**
- * Reset group and user traits and id's.
- *
- * @api public
- */
-
-Analytics.prototype.reset = function() {
-  this.user.logout();
-  this.group().logout();
-};
-
-/**
- * Normalize the given `msg`.
- */
-
-Analytics.prototype.normalize = function(message: {
-  options: { [key: string]: unknown };
-  context: { page: Partial<PageDefaults> };
-  anonymousId: string;
-}): NormalizedMessage {
-  const msg = normalize(message, Object.keys(this._integrations));
-  if (msg.anonymousId) this.user.anonymousId(msg.anonymousId);
-  msg.anonymousId = this.user.anonymousId();
-
-  // Ensure all outgoing requests include page data in their contexts.
-  msg.context.page = {
-    ...pageDefaults(),
-    ...msg.context.page
-  };
-
-  return msg;
-};
-
-/**
- * Merges the tracking plan and initialization integration options.
- *
- * @param  {Object} planIntegrations Tracking plan integrations.
- * @return {Object}                  The merged integrations.
- */
-Analytics.prototype._mergeInitializeAndPlanIntegrations = function(
-  planIntegrations: SegmentIntegration
-): object {
-  // Do nothing if there are no initialization integrations
-  if (!this.options.integrations) {
-    return planIntegrations;
-  }
-
-  // Clone the initialization integrations
-  var integrations = extend({}, this.options.integrations);
-  var integrationName: string;
-
-  // Allow the tracking plan to disable integrations that were explicitly
-  // enabled on initialization
-  if (planIntegrations.All === false) {
-    integrations = { All: false };
-  }
-
-  for (integrationName in planIntegrations) {
-    if (planIntegrations.hasOwnProperty(integrationName)) {
-      // Don't allow the tracking plan to re-enable disabled integrations
-      if (this.options.integrations[integrationName] !== false) {
-        integrations[integrationName] = planIntegrations[integrationName];
-      }
-    }
-  }
-
-  return integrations;
-};
-
-/**
- * No conflict support.
- */
-
-Analytics.prototype.noConflict = function(): SegmentAnalytics {
-  window.analytics = _analytics;
-  return this;
 };
 
 /*
