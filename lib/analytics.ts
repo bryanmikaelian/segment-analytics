@@ -17,8 +17,8 @@ import {
   SegmentOpts
 } from './types';
 import {
-  SourceMiddlewareChain,
-  IntegrationMiddlewareChain
+  IntegrationMiddlewareChain,
+  SourceMiddlewareChain
 } from './middleware';
 import user from './entity/user';
 import { default as groupEntity, Group as GroupEntity } from './entity/group';
@@ -52,6 +52,10 @@ export class Analytics extends Emitter {
   public options: SegmentOpts;
   public readonly user = user;
 
+  // TODO: Can these be private?
+  public initialized: boolean;
+  public failedInitializations = [];
+
   private _sourceMiddlewares: unknown;
   private _integrationMiddlewares: unknown;
   private _destinationMiddlewares: unknown;
@@ -62,16 +66,6 @@ export class Analytics extends Emitter {
 
   // TODO: These functions are all prototyped in legacy/index.ts.  Eventually migrate them to here
 
-  // The initialize functions
-  init: (
-    settings?: IntegrationsSettings,
-    options?: InitOptions
-  ) => SegmentAnalytics;
-  initialize: (
-    settings?: IntegrationsSettings,
-    options?: InitOptions
-  ) => SegmentAnalytics;
-
   // Random util functions
   addSourceMiddleware: (middleware: Function) => SegmentAnalytics;
   addIntegrationMiddleware: (middleware: Function) => SegmentAnalytics;
@@ -79,28 +73,6 @@ export class Analytics extends Emitter {
     integrationName: string,
     middlewares: Array<unknown>
   ) => SegmentAnalytics;
-  pageview: (url: string) => SegmentAnalytics;
-  trackClick: (
-    forms: Element | Array<unknown> | JQuery,
-    event: any,
-    properties?: any
-  ) => SegmentAnalytics;
-  trackLink: (
-    forms: Element | Array<unknown> | JQuery,
-    event: any,
-    properties?: any
-  ) => SegmentAnalytics;
-  trackSubmit: (
-    forms: Element | Array<unknown>,
-    event: any,
-    properties?: any
-  ) => SegmentAnalytics;
-  trackForm: (
-    forms: Element | Array<unknown>,
-    event: any,
-    properties?: any
-  ) => SegmentAnalytics;
-  push: (args: any[]) => void;
 
   _invoke: (method: string, facade: unknown) => SegmentAnalytics;
 
@@ -118,11 +90,134 @@ export class Analytics extends Emitter {
     this._timeout = 300;
     this.log = d('analytics.js');
     this._debug = d;
+    this.initialized = false;
 
     this.on('initialize', (_, options) => {
       if (options.initialPageview) this.page();
       this._parseQuery(window.location.search);
     });
+  }
+
+  /** ***************
+   * The initializer
+   * /
+
+  /**
+   * Initialize with the given integration `settings` and `options`.
+   *
+   * Aliased to `init` for convenience.
+   * @this {Analytics}
+   */
+  initialize(
+    settings?: IntegrationsSettings,
+    options?: InitOptions
+  ): Analytics {
+    settings = settings || {};
+    options = options || {};
+
+    this._options(options);
+    this._readied = false;
+
+    // clean unknown integrations from settings
+    Object.keys(settings).forEach(key => {
+      const Integration = this.Integrations[key];
+      if (!Integration) delete settings[key];
+    });
+
+    // add integrations
+    Object.keys(settings).forEach(key => {
+      const opts = settings[key];
+      const name = key;
+
+      // Don't load disabled integrations
+      if (options.integrations) {
+        if (
+          options.integrations[name] === false ||
+          (options.integrations.All === false && !options.integrations[name])
+        ) {
+          return;
+        }
+      }
+
+      const Integration = this.Integrations[name];
+      const clonedOpts = {};
+      extend(true, clonedOpts, opts); // deep clone opts
+      const integration = new Integration(clonedOpts);
+      this.log('initialize %o - %o', name, opts);
+      this.add(integration);
+    });
+
+    const integrations = this._integrations;
+
+    // load user now that options are set
+    this.user.load();
+    groupEntity.load();
+
+    // make ready callback
+    let readyCallCount = 0;
+    const integrationCount = Object.keys(integrations).length;
+    const ready = () => {
+      readyCallCount++;
+      if (readyCallCount >= integrationCount) {
+        this._readied = true;
+        this.emit('ready');
+      }
+    };
+
+    // init if no integrations
+    if (integrationCount <= 0) {
+      ready();
+    }
+
+    // initialize integrations, passing ready
+    // create a list of any integrations that did not initialize - this will be passed with all events for replay support:
+    this.failedInitializations = [];
+    let initialPageSkipped = false;
+    Object.keys(integrations).forEach(key => {
+      const integration = integrations[key];
+      if (
+        options.initialPageview &&
+        integration.options.initialPageview === false
+      ) {
+        // We've assumed one initial pageview, so make sure we don't count the first page call.
+        const page = integration.page;
+        integration.page = function() {
+          if (initialPageSkipped) {
+            return page.apply(this, arguments);
+          }
+          initialPageSkipped = true;
+          return;
+        };
+      }
+
+      integration.analytics = this;
+
+      integration.once('ready', ready);
+      try {
+        metrics.increment('analytics_js.integration.invoke', {
+          method: 'initialize',
+          integration_name: integration.name
+        });
+        integration.initialize();
+      } catch (e) {
+        const integrationName = integration.name;
+        metrics.increment('analytics_js.integration.invoke.error', {
+          method: 'initialize',
+          integration_name: integration.name
+        });
+        this.failedInitializations.push(integrationName);
+        this.log('Error initializing %s integration: %o', integrationName, e);
+        // Mark integration as ready to prevent blocking of anyone listening to analytics.ready()
+
+        integration.ready();
+      }
+    });
+
+    // backwards compat with angular plugin and used for init logic checks
+    this.initialized = true;
+
+    this.emit('initialize', settings, options);
+    return this;
   }
 
   /** ****************
@@ -507,6 +602,104 @@ export class Analytics extends Emitter {
 
     this.emit('alias', to, from, options);
     this._callback(fn);
+    return this;
+  }
+
+  /** ***************
+   *  Helper "track" methods
+   */
+
+  /**
+   * Helper method to track an outbound form that would normally navigate away
+   * from the page before the analytics calls were sent.
+   *
+   * @param {Element|Array} forms
+   * @param {string|Function} event
+   * @param {Object|Function} properties (optional)
+   * @return {Analytics}
+   */
+  trackForm(
+    forms?: HTMLFormElement | Array<HTMLFormElement>,
+    event?: string | ((el: HTMLFormElement) => string),
+    properties?: Properties | ((el: HTMLFormElement) => Properties)
+  ): Analytics {
+    if (!forms && !event) {
+      return this;
+    }
+
+    if (!Array.isArray(forms)) {
+      forms = [forms];
+    }
+
+    const elements = forms;
+
+    elements.forEach(el => {
+      if (!(el instanceof Element)) {
+        throw new TypeError('Must pass HTMLElement to `analytics.trackForm`.');
+      }
+      el.onsubmit = (e: Event) => {
+        e.preventDefault();
+
+        const ev = typeof event === 'function' ? event(el) : event;
+        const props =
+          typeof properties === 'function' ? properties(el) : properties;
+        this.track(ev, props);
+
+        this._callback(function() {
+          el.submit();
+        });
+      };
+      el.submit();
+    });
+
+    return this;
+  }
+
+  /**
+   * Helper method to track an outbound link that would normally navigate away
+   * from the page before the analytics calls were sent.
+   *
+   *
+   * @param {Element|Array} links
+   * @param {string|Function} event
+   * @param {Object|Function} properties (optional)
+   * @return {Analytics}
+   */
+  trackLink(
+    links: HTMLAnchorElement | Array<HTMLAnchorElement>,
+    event?: string | ((el: HTMLAnchorElement) => string),
+    properties?: Properties | ((el: HTMLAnchorElement) => Properties)
+  ): Analytics {
+    if (!Array.isArray(links)) {
+      links = [links];
+    }
+
+    links.forEach(el => {
+      if (!(el instanceof Element)) {
+        throw new TypeError('Must pass HTMLElement to `analytics.trackLink`.');
+      }
+      el.onclick = (e: MouseEvent) => {
+        const ev = typeof event === 'function' ? event(el) : event;
+        const props =
+          typeof properties === 'function' ? properties(el) : properties;
+
+        const href =
+          el.getAttribute('href') ||
+          el.getAttributeNS('http://www.w3.org/1999/xlink', 'href') ||
+          el.getAttribute('xlink:href');
+
+        this.track(ev, props);
+
+        if (href && el.target !== '_blank') {
+          e.preventDefault();
+
+          this._callback(function() {
+            window.location.href = href;
+          });
+        }
+      };
+    });
+
     return this;
   }
 

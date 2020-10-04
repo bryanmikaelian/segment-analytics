@@ -3,8 +3,9 @@ import assignIn from 'lodash.assignin';
 
 import { Analytics } from '../../lib/analytics';
 import cookie from '../../lib/entity/store/cookie';
+import { default as s } from '../../lib/entity/store/local';
+import { default as m } from '../../lib/metrics';
 import { pageDefaults } from '../../lib/page';
-import { store as s, metrics as m } from '../../lib/legacy';
 import { User } from '../../lib/entity/user';
 import { Group } from '../../lib/entity/group';
 
@@ -647,13 +648,16 @@ describe('Analytics', function() {
     });
 
     it('should respect canonical', function() {
-      var el = document.createElement('link');
+      const el = document.createElement('link');
       el.rel = 'canonical';
-      el.href = 'baz.com';
+      el.href = 'http://baz.com';
       head.appendChild(el);
       analytics.page();
-      var page = analytics._invoke.args[0][1];
-      assert(page.properties().url === 'baz.com' + window.location.search);
+      const page = analytics._invoke.args[0][1];
+      assert.equal(
+        page.properties().url,
+        'http://baz.com' + window.location.search
+      );
       el.parentNode.removeChild(el);
     });
 
@@ -855,18 +859,6 @@ describe('Analytics', function() {
         done();
       });
       analytics.page('category', 'name', {}, {});
-    });
-  });
-
-  describe('#pageview', function() {
-    beforeEach(function() {
-      analytics.initialize();
-      sinon.spy(analytics, 'page');
-    });
-
-    it('should call #page with a path', function() {
-      analytics.pageview('/path');
-      assert(analytics.page.calledWith({ path: '/path' }));
     });
   });
 
@@ -1660,8 +1652,6 @@ describe('Analytics', function() {
     var svg;
 
     beforeEach(function() {
-      // FIXME: IE8 doesn't have createElementNS.
-      if (!document.createElementNS) return;
       wrap = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       svg = document.createElementNS('http://www.w3.org/2000/svg', 'a');
       wrap.appendChild(svg);
@@ -1673,25 +1663,16 @@ describe('Analytics', function() {
       link = document.createElement('a');
       link.href = '#';
       document.body.appendChild(link);
-      (window as any).jQuery = require('jquery');
     });
 
     afterEach(function() {
       window.location.hash = '';
       if (wrap) document.body.removeChild(wrap);
       document.body.removeChild(link);
-      (window as any).jQuery = null;
     });
 
     it('should trigger a track on an element click', function() {
       analytics.trackLink(link);
-      trigger(link, 'click');
-      assert(analytics.track.called);
-    });
-
-    it('should accept a jquery object for an element', function() {
-      var $link = jQuery(link);
-      analytics.trackLink($link);
       trigger(link, 'click');
       assert(analytics.track.called);
     });
@@ -1792,14 +1773,6 @@ describe('Analytics', function() {
     var form;
     var submit;
 
-    before(function() {
-      (window as any).jQuery = require('jquery');
-    });
-
-    after(function() {
-      (window as any).jQuery = null;
-    });
-
     beforeEach(function() {
       sinon.spy(analytics, 'track');
       form = document.createElement('form');
@@ -1817,12 +1790,6 @@ describe('Analytics', function() {
     });
 
     it('should trigger a track on a form submit', function() {
-      analytics.trackForm(form);
-      submit.click();
-      assert(analytics.track.called);
-    });
-
-    it('should accept a jquery object for an element', function() {
       analytics.trackForm(form);
       submit.click();
       assert(analytics.track.called);
@@ -1881,31 +1848,6 @@ describe('Analytics', function() {
       });
       analytics.trackForm(form);
       submit.click();
-    });
-
-    it('should trigger an existing jquery submit handler', function(done) {
-      var $form = jQuery(form);
-      $form.submit(function() {
-        done();
-      });
-      analytics.trackForm(form);
-      submit.click();
-    });
-
-    it('should track on a form submitted via jquery', function() {
-      var $form = jQuery(form);
-      analytics.trackForm(form);
-      $form.submit();
-      assert(analytics.track.called);
-    });
-
-    it('should trigger an existing jquery submit handler on a form submitted via jquery', function(done) {
-      var $form = jQuery(form);
-      $form.submit(function() {
-        done();
-      });
-      analytics.trackForm(form);
-      $form.submit();
     });
   });
 
@@ -2067,7 +2009,7 @@ describe('Analytics', function() {
     });
 
     it('should not throw an error if AJS has already initialized', function() {
-      analytics.init();
+      analytics.initialize();
       try {
         analytics.addIntegrationMiddleware(function() {});
       } catch (e) {
@@ -2110,7 +2052,7 @@ describe('Analytics', function() {
     });
 
     it('should not throw an error if AJS has already initialized', function() {
-      analytics.init();
+      analytics.initialize();
       try {
         analytics.addDestinationMiddleware('foo', [function() {}]);
       } catch (e) {
@@ -2155,7 +2097,7 @@ describe('Analytics', function() {
     });
 
     it('should not throw an error if AJS has already initialized', function() {
-      analytics.init();
+      analytics.initialize();
       try {
         analytics.addSourceMiddleware(function() {});
       } catch (e) {
