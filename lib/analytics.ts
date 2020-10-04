@@ -3,7 +3,10 @@ import Emitter from 'component-emitter';
 import nextTick from 'next-tick';
 import extend from 'extend';
 import facade from 'segmentio-facade';
-import is from 'is';
+import cloneDeep from 'lodash.clonedeep';
+import pick from 'lodash.pick';
+import * as qs from 'query-string';
+import { ParsedQuery } from 'query-string';
 
 import { version } from '../package.json';
 import {
@@ -19,8 +22,6 @@ import {
 } from './middleware';
 import user from './entity/user';
 import { default as groupEntity, Group as GroupEntity } from './entity/group';
-import * as qs from 'query-string';
-import { ParsedQuery } from 'query-string';
 import {
   Message,
   normalize,
@@ -32,8 +33,6 @@ import { pageDefaults } from './page';
 import cookie from './entity/store/cookie';
 import metrics from './metrics';
 import store from './entity/store/local';
-import cloneDeep from 'lodash.clonedeep';
-import pick from 'lodash.pick';
 
 type Callback = () => void;
 
@@ -426,7 +425,8 @@ export class Analytics extends Emitter {
     // (Any page defaults get applied in `this.normalize` for consistency.)
     // Weird, yeah--moving special props to `context.page` will fix this in the long term.
     const overrides = pick(properties, Object.keys(defs));
-    if (!is.empty(overrides)) {
+    const empty = Object.keys(overrides).some(k => overrides[k] === undefined);
+    if (!empty) {
       options = (options || {}) as Options;
       options.context = options.context || {};
       options.context.page = overrides;
