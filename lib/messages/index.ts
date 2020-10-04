@@ -6,15 +6,21 @@ import SparkMD5 from 'spark-md5'
 const debug = d('analytics.js:normalize');
 const TOP_LEVEL_PROPERTIES = ['integrations', 'anonymousId', 'timestamp', 'context'];
 
+export interface Options {
+  [key: string]: unknown;
+  integrations?: { [key: string]: string };
+  providers?: { [key: string]: string | boolean };
+  context?: {
+    [key: string]: unknown;
+    page?: Record<string, unknown>
+  };
+}
+
+export type Properties = Record<string, unknown>
+
 export interface Message {
-  options?: {
-    [key: string]: unknown
-    integrations?: { [key: string]: string };
-    providers?: { [key: string]: string | boolean };
-    context?: {
-      [key: string]: unknown
-    };
-  }
+  options?: Options,
+  properties?: Properties
   [key: string]: unknown
 }
 
@@ -28,7 +34,8 @@ export interface NormalizedMessage {
    * The collection of integrations that will receive this message.
    */
   integrations: {
-    [key: string]: string;
+    All?: boolean
+    [key: string]: string | boolean;
   };
 
   /**
