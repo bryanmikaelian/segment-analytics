@@ -1,7 +1,6 @@
-import { IntegrationsSettings, InitOptions, SegmentAnalytics } from '../types';
+import { SegmentAnalytics } from '../types';
 
 import { Analytics } from '../analytics';
-import { default as groupEntity } from '../entity/group';
 import metrics from '../metrics';
 
 /*
@@ -12,11 +11,6 @@ var Facade = require('segmentio-facade');
 var DestinationMiddlewareChain = require('../middleware')
   .DestinationMiddlewareChain;
 var extend = require('extend');
-var is = require('is');
-var isMeta = require('@segment/is-meta');
-var on = require('component-event').bind;
-var prevent = require('@segment/prevent-default');
-var type = require('component-type');
 
 /**
  * Define a new `SourceMiddleware`

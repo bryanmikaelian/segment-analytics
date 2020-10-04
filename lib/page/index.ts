@@ -1,6 +1,5 @@
 import { PageDefaults } from '../types';
 import includes from 'lodash.includes';
-import url from 'component-url';
 
 /**
  * Return the canonical path for the page.
@@ -11,8 +10,13 @@ const canonicalPath = (): string => {
   if (!canon) return window.location.pathname;
   const href = canon.getAttribute('href');
 
-  const parsed = url.parse(href);
-  return parsed.pathname;
+  try {
+    const url = new URL(href);
+    const { pathname } = url;
+    return pathname;
+  } catch (e) {
+    return window.location.pathname;
+  }
 };
 
 /**

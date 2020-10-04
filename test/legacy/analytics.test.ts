@@ -648,13 +648,16 @@ describe('Analytics', function() {
     });
 
     it('should respect canonical', function() {
-      var el = document.createElement('link');
+      const el = document.createElement('link');
       el.rel = 'canonical';
-      el.href = 'baz.com';
+      el.href = 'http://baz.com';
       head.appendChild(el);
       analytics.page();
-      var page = analytics._invoke.args[0][1];
-      assert(page.properties().url === 'baz.com' + window.location.search);
+      const page = analytics._invoke.args[0][1];
+      assert.equal(
+        page.properties().url,
+        'http://baz.com' + window.location.search
+      );
       el.parentNode.removeChild(el);
     });
 
