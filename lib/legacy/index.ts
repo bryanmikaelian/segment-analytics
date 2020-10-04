@@ -1,33 +1,19 @@
-import {
-  IntegrationsSettings,
-  InitOptions,
-  SegmentAnalytics,
-  SegmentOpts
-} from '../types';
+import { IntegrationsSettings, InitOptions, SegmentAnalytics } from '../types';
 
-import { pageDefaults } from '../page';
 import { Analytics } from '../analytics';
 import cookie from '../entity/store/cookie';
-import { default as groupEntity, Group as GroupEntity } from '../entity/group';
+import { default as groupEntity } from '../entity/group';
 import store from '../entity/store/local';
 import memory from '../entity/store/memory';
 import metrics from '../metrics';
-
-import cloneDeep from 'lodash.clonedeep';
-import pick from 'lodash.pick';
 
 /*
  * Module dependencies.
  */
 
-var Alias = require('segmentio-facade').Alias;
 var Facade = require('segmentio-facade');
-var Group = require('segmentio-facade').Group;
-var Identify = require('segmentio-facade').Identify;
 var DestinationMiddlewareChain = require('../middleware')
   .DestinationMiddlewareChain;
-var Page = require('segmentio-facade').Page;
-var Track = require('segmentio-facade').Track;
 var extend = require('extend');
 var is = require('is');
 var isMeta = require('@segment/is-meta');
@@ -200,177 +186,6 @@ Analytics.prototype.init = Analytics.prototype.initialize = function(
 };
 
 /**
- * Identify a user by optional `id` and `traits`.
- *
- * @param {string} [id=user.id] User ID.
- * @param {Object} [traits=null] User traits.
- * @param {Object} [options=null]
- * @param {Function} [fn]
- * @return {Analytics}
- */
-
-Analytics.prototype.identify = function(
-  id?: string,
-  traits?: unknown,
-  options?: SegmentOpts,
-  fn?: Function | SegmentOpts
-): SegmentAnalytics {
-  // Argument reshuffling.
-  /* eslint-disable no-unused-expressions, no-sequences */
-  if (is.fn(options)) (fn = options), (options = null);
-  if (is.fn(traits)) (fn = traits), (options = null), (traits = null);
-  if (is.object(id)) (options = traits), (traits = id), (id = this.user.id);
-  /* eslint-enable no-unused-expressions, no-sequences */
-
-  // clone traits before we manipulate so we don't do anything uncouth, and take
-  // from `user` so that we carryover anonymous traits
-  this.user.identify(id, traits as Record<string, unknown>);
-
-  var msg = this.normalize({
-    options: options,
-    traits: this.user.traits,
-    userId: this.user.id
-  });
-
-  // Add the initialize integrations so the server-side ones can be disabled too
-  // NOTE: We need to merge integrations, not override them with assign
-  // since it is possible to change the initialized integrations at runtime.
-  if (this.options.integrations) {
-    msg.integrations = {
-      ...this.options.integrations,
-      ...msg.integrations
-    };
-  }
-
-  this._invoke('identify', new Identify(msg));
-
-  // emit
-  this.emit('identify', id, traits, options);
-  this._callback(fn);
-  return this;
-};
-
-/**
- * Identify a group by optional `id` and `traits`. Or, if no arguments are
- * supplied, return the current group.
- *
- * @this {SegmentAnalytics}
- *
- * @param {string} [id=group.id()] Group ID.
- * @param {Object} [traits=null] Group traits.
- * @param {Object} [options=null]
- * @param {Function} [fn]
- * @return {Analytics|GroupEntity}
- */
-Analytics.prototype.group = function(
-  id: string | Record<string, unknown>,
-  traits?: Record<string, unknown>,
-  options?: unknown,
-  fn?: unknown
-): SegmentAnalytics | GroupEntity {
-  /* eslint-disable no-unused-expressions, no-sequences */
-  if (!arguments.length) return groupEntity as GroupEntity;
-  if (is.fn(options)) (fn = options), (options = null);
-  if (is.fn(traits)) (fn = traits), (options = null), (traits = null);
-  if (typeof id === 'object')
-    (options = traits), (traits = id), (id = groupEntity.id);
-  /* eslint-enable no-unused-expressions, no-sequences */
-
-  // grab from group again to make sure we're taking from the source
-  groupEntity.identify(id, traits);
-
-  var msg = this.normalize({
-    options: options,
-    traits: groupEntity.traits,
-    groupId: groupEntity.id
-  });
-
-  // Add the initialize integrations so the server-side ones can be disabled too
-  // NOTE: We need to merge integrations, not override them with assign
-  // since it is possible to change the initialized integrations at runtime.
-  if (this.options.integrations) {
-    msg.integrations = {
-      ...this.options.integrations,
-      ...msg.integrations
-    };
-  }
-
-  this._invoke('group', new Group(msg));
-
-  this.emit('group', id, traits, options);
-  this._callback(fn);
-  return this as SegmentAnalytics;
-};
-
-/**
- * Track an `event` that a user has triggered with optional `properties`.
- *
- * @param {string} event
- * @param {Object} [properties=null]
- * @param {Object} [options=null]
- * @param {Function} [fn]
- * @return {Analytics}
- */
-
-Analytics.prototype.track = function(
-  event: string,
-  properties?: unknown,
-  options?: unknown,
-  fn?: unknown
-): SegmentAnalytics {
-  // Argument reshuffling.
-  /* eslint-disable no-unused-expressions, no-sequences */
-  if (is.fn(options)) (fn = options), (options = null);
-  if (is.fn(properties))
-    (fn = properties), (options = null), (properties = null);
-  /* eslint-enable no-unused-expressions, no-sequences */
-
-  // figure out if the event is archived.
-  var plan = this.options.plan || {};
-  var events = plan.track || {};
-  var planIntegrationOptions = {};
-
-  // normalize
-  var msg = this.normalize({
-    properties: properties,
-    options: options,
-    event: event
-  });
-
-  // plan.
-  plan = events[event];
-  if (plan) {
-    this.log('plan %o - %o', event, plan);
-    if (plan.enabled === false) {
-      // Disabled events should always be sent to Segment.
-      planIntegrationOptions = { All: false, 'Segment.io': true };
-    } else {
-      planIntegrationOptions = plan.integrations || {};
-    }
-  } else {
-    var defaultPlan = events.__default || { enabled: true };
-    if (!defaultPlan.enabled) {
-      // Disabled events should always be sent to Segment.
-      planIntegrationOptions = { All: false, 'Segment.io': true };
-    }
-  }
-
-  // Add the initialize integrations so the server-side ones can be disabled too
-  // NOTE: We need to merge integrations, not override them with assign
-  // since it is possible to change the initialized integrations at runtime.
-  msg.integrations = {
-    ...this._mergeInitializeAndPlanIntegrations(planIntegrationOptions),
-    ...msg.integrations
-  };
-
-  this._invoke('track', new Track(msg));
-
-  this.emit('track', event, properties, options);
-  this._callback(fn);
-  return this;
-};
-
-/**
  * Helper method to track an outbound link that would normally navigate away
  * from the page before the analytics calls were sent.
  *
@@ -477,88 +292,6 @@ Analytics.prototype.trackSubmit = Analytics.prototype.trackForm = function(
 };
 
 /**
- * Trigger a pageview, labeling the current page with an optional `category`,
- * `name` and `properties`.
- *
- * @param {string} [category]
- * @param {string} [name]
- * @param {Object|string} [properties] (or path)
- * @param {Object} [options]
- * @param {Function} [fn]
- * @return {Analytics}
- */
-
-Analytics.prototype.page = function(
-  category?: string,
-  name?: string,
-  properties?: any,
-  options?: any,
-  fn?: unknown
-): SegmentAnalytics {
-  // Argument reshuffling.
-  /* eslint-disable no-unused-expressions, no-sequences */
-  if (is.fn(options)) (fn = options), (options = null);
-  if (is.fn(properties)) (fn = properties), (options = properties = null);
-  if (is.fn(name)) (fn = name), (options = properties = name = null);
-  if (type(category) === 'object')
-    (options = name), (properties = category), (name = category = null);
-  if (type(name) === 'object')
-    (options = properties), (properties = name), (name = null);
-  if (type(category) === 'string' && type(name) !== 'string')
-    (name = category), (category = null);
-  /* eslint-enable no-unused-expressions, no-sequences */
-
-  properties = cloneDeep(properties) || {};
-  if (name) properties.name = name;
-  if (category) properties.category = category;
-
-  // Ensure properties has baseline spec properties.
-  // TODO: Eventually move these entirely to `options.context.page`
-  // FIXME: This is purposely not overriding `defs`. There was a bug in the logic implemented by `@ndhoule/defaults`.
-  //        This bug made it so we only would overwrite values in `defs` that were set to `undefined`.
-  //        In some cases, though, pageDefaults  will return defaults with values set to "" (such as `window.location.search` defaulting to "").
-  //        The decision to not fix this bus was made to preserve backwards compatibility.
-  const defs = pageDefaults();
-  properties = {
-    ...properties,
-    ...defs
-  };
-
-  // Mirror user overrides to `options.context.page` (but exclude custom properties)
-  // (Any page defaults get applied in `this.normalize` for consistency.)
-  // Weird, yeah--moving special props to `context.page` will fix this in the long term.
-  const overrides = pick(properties, Object.keys(defs));
-  if (!is.empty(overrides)) {
-    options = options || {};
-    options.context = options.context || {};
-    options.context.page = overrides;
-  }
-
-  const msg = this.normalize({
-    properties: properties,
-    category: category,
-    options: options,
-    name: name
-  });
-
-  // Add the initialize integrations so the server-side ones can be disabled too
-  // NOTE: We need to merge integrations, not override them with assign
-  // since it is possible to change the initialized integrations at runtime.
-  if (this.options.integrations) {
-    msg.integrations = {
-      ...this.options.integrations,
-      ...msg.integrations
-    };
-  }
-
-  this._invoke('page', new Page(msg));
-
-  this.emit('page', category, name, properties, options);
-  this._callback(fn);
-  return this;
-};
-
-/**
  * FIXME: BACKWARDS COMPATIBILITY: convert an old `pageview` to a `page` call.
  * @api private
  */
@@ -567,52 +300,6 @@ Analytics.prototype.pageview = function(url: string): SegmentAnalytics {
   const properties: { path?: string } = {};
   if (url) properties.path = url;
   this.page(properties);
-  return this;
-};
-
-/**
- * Merge two previously unassociated user identities.
- *
- * @param {string} to
- * @param {string} from (optional)
- * @param {Object} options (optional)
- * @param {Function} fn (optional)
- * @return {Analytics}
- */
-
-Analytics.prototype.alias = function(
-  to: string,
-  from?: string,
-  options?: unknown,
-  fn?: unknown
-): SegmentAnalytics {
-  // Argument reshuffling.
-  /* eslint-disable no-unused-expressions, no-sequences */
-  if (is.fn(options)) (fn = options), (options = null);
-  if (is.fn(from)) (fn = from), (options = null), (from = null);
-  if (is.object(from)) (options = from), (from = null);
-  /* eslint-enable no-unused-expressions, no-sequences */
-
-  var msg = this.normalize({
-    options: options,
-    previousId: from,
-    userId: to
-  });
-
-  // Add the initialize integrations so the server-side ones can be disabled too
-  // NOTE: We need to merge integrations, not override them with assign
-  // since it is possible to change the initialized integrations at runtime.
-  if (this.options.integrations) {
-    msg.integrations = {
-      ...this.options.integrations,
-      ...msg.integrations
-    };
-  }
-
-  this._invoke('alias', new Alias(msg));
-
-  this.emit('alias', to, from, options);
-  this._callback(fn);
   return this;
 };
 

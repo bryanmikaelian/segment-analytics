@@ -49,6 +49,19 @@ export interface SegmentOpts {
   integrations?: any;
   anonymousId?: string;
   context?: object;
+  plan?: {
+    enabled?: boolean;
+    track?: {
+      [key: string]: unknown;
+      __default?: {
+        enabled: boolean;
+      };
+    };
+    integrations?: {
+      All?: boolean;
+      [key: string]: boolean;
+    };
+  };
 }
 
 export interface PageDefaults {

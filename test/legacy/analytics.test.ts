@@ -696,10 +696,10 @@ describe('Analytics', function() {
     it('should accept (name, properties, options, callback)', function(done) {
       defaults.name = 'name';
       analytics.page('name', {}, {}, function() {
-        var page = analytics._invoke.args[0][1];
-        assert(page.name() === 'name');
-        assert(typeof page.properties() === 'object');
-        assert(typeof page.options() === 'object');
+        const page = analytics._invoke.args[0][1];
+        assert.equal(page.name(), 'name');
+        assert.equal(typeof page.properties(), 'object');
+        assert.equal(typeof page.options(), 'object');
         done();
       });
     });
