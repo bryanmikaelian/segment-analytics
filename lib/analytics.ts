@@ -52,6 +52,10 @@ export class Analytics extends Emitter {
   public options: SegmentOpts;
   public readonly user = user;
 
+  // TODO: Can these be private?
+  public initialized: boolean;
+  public failedInitializations = [];
+
   private _sourceMiddlewares: unknown;
   private _integrationMiddlewares: unknown;
   private _destinationMiddlewares: unknown;
@@ -62,16 +66,6 @@ export class Analytics extends Emitter {
 
   // TODO: These functions are all prototyped in legacy/index.ts.  Eventually migrate them to here
 
-  // The initialize functions
-  init: (
-    settings?: IntegrationsSettings,
-    options?: InitOptions
-  ) => SegmentAnalytics;
-  initialize: (
-    settings?: IntegrationsSettings,
-    options?: InitOptions
-  ) => SegmentAnalytics;
-
   // Random util functions
   addSourceMiddleware: (middleware: Function) => SegmentAnalytics;
   addIntegrationMiddleware: (middleware: Function) => SegmentAnalytics;
@@ -79,7 +73,6 @@ export class Analytics extends Emitter {
     integrationName: string,
     middlewares: Array<unknown>
   ) => SegmentAnalytics;
-  pageview: (url: string) => SegmentAnalytics;
   trackClick: (
     forms: Element | Array<unknown> | JQuery,
     event: any,
@@ -100,7 +93,6 @@ export class Analytics extends Emitter {
     event: any,
     properties?: any
   ) => SegmentAnalytics;
-  push: (args: any[]) => void;
 
   _invoke: (method: string, facade: unknown) => SegmentAnalytics;
 
@@ -118,11 +110,134 @@ export class Analytics extends Emitter {
     this._timeout = 300;
     this.log = d('analytics.js');
     this._debug = d;
+    this.initialized = false;
 
     this.on('initialize', (_, options) => {
       if (options.initialPageview) this.page();
       this._parseQuery(window.location.search);
     });
+  }
+
+  /** ***************
+   * The initializer
+   * /
+
+  /**
+   * Initialize with the given integration `settings` and `options`.
+   *
+   * Aliased to `init` for convenience.
+   * @this {Analytics}
+   */
+  initialize(
+    settings?: IntegrationsSettings,
+    options?: InitOptions
+  ): Analytics {
+    settings = settings || {};
+    options = options || {};
+
+    this._options(options);
+    this._readied = false;
+
+    // clean unknown integrations from settings
+    Object.keys(settings).forEach(key => {
+      const Integration = this.Integrations[key];
+      if (!Integration) delete settings[key];
+    });
+
+    // add integrations
+    Object.keys(settings).forEach(key => {
+      const opts = settings[key];
+      const name = key;
+
+      // Don't load disabled integrations
+      if (options.integrations) {
+        if (
+          options.integrations[name] === false ||
+          (options.integrations.All === false && !options.integrations[name])
+        ) {
+          return;
+        }
+      }
+
+      const Integration = this.Integrations[name];
+      const clonedOpts = {};
+      extend(true, clonedOpts, opts); // deep clone opts
+      const integration = new Integration(clonedOpts);
+      this.log('initialize %o - %o', name, opts);
+      this.add(integration);
+    });
+
+    const integrations = this._integrations;
+
+    // load user now that options are set
+    this.user.load();
+    groupEntity.load();
+
+    // make ready callback
+    let readyCallCount = 0;
+    const integrationCount = Object.keys(integrations).length;
+    const ready = () => {
+      readyCallCount++;
+      if (readyCallCount >= integrationCount) {
+        this._readied = true;
+        this.emit('ready');
+      }
+    };
+
+    // init if no integrations
+    if (integrationCount <= 0) {
+      ready();
+    }
+
+    // initialize integrations, passing ready
+    // create a list of any integrations that did not initialize - this will be passed with all events for replay support:
+    this.failedInitializations = [];
+    let initialPageSkipped = false;
+    Object.keys(integrations).forEach(key => {
+      const integration = integrations[key];
+      if (
+        options.initialPageview &&
+        integration.options.initialPageview === false
+      ) {
+        // We've assumed one initial pageview, so make sure we don't count the first page call.
+        const page = integration.page;
+        integration.page = function() {
+          if (initialPageSkipped) {
+            return page.apply(this, arguments);
+          }
+          initialPageSkipped = true;
+          return;
+        };
+      }
+
+      integration.analytics = this;
+
+      integration.once('ready', ready);
+      try {
+        metrics.increment('analytics_js.integration.invoke', {
+          method: 'initialize',
+          integration_name: integration.name
+        });
+        integration.initialize();
+      } catch (e) {
+        const integrationName = integration.name;
+        metrics.increment('analytics_js.integration.invoke.error', {
+          method: 'initialize',
+          integration_name: integration.name
+        });
+        this.failedInitializations.push(integrationName);
+        this.log('Error initializing %s integration: %o', integrationName, e);
+        // Mark integration as ready to prevent blocking of anyone listening to analytics.ready()
+
+        integration.ready();
+      }
+    });
+
+    // backwards compat with angular plugin and used for init logic checks
+    this.initialized = true;
+
+    this.emit('initialize', settings, options);
+    return this;
   }
 
   /** ****************

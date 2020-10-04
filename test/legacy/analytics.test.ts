@@ -2056,7 +2056,7 @@ describe('Analytics', function() {
     });
 
     it('should not throw an error if AJS has already initialized', function() {
-      analytics.init();
+      analytics.initialize();
       try {
         analytics.addIntegrationMiddleware(function() {});
       } catch (e) {
@@ -2099,7 +2099,7 @@ describe('Analytics', function() {
     });
 
     it('should not throw an error if AJS has already initialized', function() {
-      analytics.init();
+      analytics.initialize();
       try {
         analytics.addDestinationMiddleware('foo', [function() {}]);
       } catch (e) {
@@ -2144,7 +2144,7 @@ describe('Analytics', function() {
     });
 
     it('should not throw an error if AJS has already initialized', function() {
-      analytics.init();
+      analytics.initialize();
       try {
         analytics.addSourceMiddleware(function() {});
       } catch (e) {
