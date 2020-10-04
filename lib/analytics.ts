@@ -17,8 +17,8 @@ import {
   SegmentOpts
 } from './types';
 import {
-  SourceMiddlewareChain,
-  IntegrationMiddlewareChain
+  IntegrationMiddlewareChain,
+  SourceMiddlewareChain
 } from './middleware';
 import user from './entity/user';
 import { default as groupEntity, Group as GroupEntity } from './entity/group';
@@ -72,26 +72,6 @@ export class Analytics extends Emitter {
   addDestinationMiddleware: (
     integrationName: string,
     middlewares: Array<unknown>
-  ) => SegmentAnalytics;
-  trackClick: (
-    forms: Element | Array<unknown> | JQuery,
-    event: any,
-    properties?: any
-  ) => SegmentAnalytics;
-  trackLink: (
-    forms: Element | Array<unknown> | JQuery,
-    event: any,
-    properties?: any
-  ) => SegmentAnalytics;
-  trackSubmit: (
-    forms: Element | Array<unknown>,
-    event: any,
-    properties?: any
-  ) => SegmentAnalytics;
-  trackForm: (
-    forms: Element | Array<unknown>,
-    event: any,
-    properties?: any
   ) => SegmentAnalytics;
 
   _invoke: (method: string, facade: unknown) => SegmentAnalytics;
@@ -622,6 +602,104 @@ export class Analytics extends Emitter {
 
     this.emit('alias', to, from, options);
     this._callback(fn);
+    return this;
+  }
+
+  /** ***************
+   *  Helper "track" methods
+   */
+
+  /**
+   * Helper method to track an outbound form that would normally navigate away
+   * from the page before the analytics calls were sent.
+   *
+   * @param {Element|Array} forms
+   * @param {string|Function} event
+   * @param {Object|Function} properties (optional)
+   * @return {Analytics}
+   */
+  trackForm(
+    forms?: HTMLFormElement | Array<HTMLFormElement>,
+    event?: string | ((el: HTMLFormElement) => string),
+    properties?: Properties | ((el: HTMLFormElement) => Properties)
+  ): Analytics {
+    if (!forms && !event) {
+      return this;
+    }
+
+    if (!Array.isArray(forms)) {
+      forms = [forms];
+    }
+
+    const elements = forms;
+
+    elements.forEach(el => {
+      if (!(el instanceof Element)) {
+        throw new TypeError('Must pass HTMLElement to `analytics.trackForm`.');
+      }
+      el.onsubmit = (e: Event) => {
+        e.preventDefault();
+
+        const ev = typeof event === 'function' ? event(el) : event;
+        const props =
+          typeof properties === 'function' ? properties(el) : properties;
+        this.track(ev, props);
+
+        this._callback(function() {
+          el.submit();
+        });
+      };
+      el.submit();
+    });
+
+    return this;
+  }
+
+  /**
+   * Helper method to track an outbound link that would normally navigate away
+   * from the page before the analytics calls were sent.
+   *
+   *
+   * @param {Element|Array} links
+   * @param {string|Function} event
+   * @param {Object|Function} properties (optional)
+   * @return {Analytics}
+   */
+  trackLink(
+    links: HTMLAnchorElement | Array<HTMLAnchorElement>,
+    event?: string | ((el: HTMLAnchorElement) => string),
+    properties?: Properties | ((el: HTMLAnchorElement) => Properties)
+  ): Analytics {
+    if (!Array.isArray(links)) {
+      links = [links];
+    }
+
+    links.forEach(el => {
+      if (!(el instanceof Element)) {
+        throw new TypeError('Must pass HTMLElement to `analytics.trackLink`.');
+      }
+      el.onclick = (e: MouseEvent) => {
+        const ev = typeof event === 'function' ? event(el) : event;
+        const props =
+          typeof properties === 'function' ? properties(el) : properties;
+
+        const href =
+          el.getAttribute('href') ||
+          el.getAttributeNS('http://www.w3.org/1999/xlink', 'href') ||
+          el.getAttribute('xlink:href');
+
+        this.track(ev, props);
+
+        if (href && el.target !== '_blank') {
+          e.preventDefault();
+
+          this._callback(function() {
+            window.location.href = href;
+          });
+        }
+      };
+    });
+
     return this;
   }
 

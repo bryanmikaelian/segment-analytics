@@ -1649,8 +1649,6 @@ describe('Analytics', function() {
     var svg;
 
     beforeEach(function() {
-      // FIXME: IE8 doesn't have createElementNS.
-      if (!document.createElementNS) return;
       wrap = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       svg = document.createElementNS('http://www.w3.org/2000/svg', 'a');
       wrap.appendChild(svg);
@@ -1662,25 +1660,16 @@ describe('Analytics', function() {
       link = document.createElement('a');
       link.href = '#';
       document.body.appendChild(link);
-      (window as any).jQuery = require('jquery');
     });
 
     afterEach(function() {
       window.location.hash = '';
       if (wrap) document.body.removeChild(wrap);
       document.body.removeChild(link);
-      (window as any).jQuery = null;
     });
 
     it('should trigger a track on an element click', function() {
       analytics.trackLink(link);
-      trigger(link, 'click');
-      assert(analytics.track.called);
-    });
-
-    it('should accept a jquery object for an element', function() {
-      var $link = jQuery(link);
-      analytics.trackLink($link);
       trigger(link, 'click');
       assert(analytics.track.called);
     });
@@ -1781,14 +1770,6 @@ describe('Analytics', function() {
     var form;
     var submit;
 
-    before(function() {
-      (window as any).jQuery = require('jquery');
-    });
-
-    after(function() {
-      (window as any).jQuery = null;
-    });
-
     beforeEach(function() {
       sinon.spy(analytics, 'track');
       form = document.createElement('form');
@@ -1806,12 +1787,6 @@ describe('Analytics', function() {
     });
 
     it('should trigger a track on a form submit', function() {
-      analytics.trackForm(form);
-      submit.click();
-      assert(analytics.track.called);
-    });
-
-    it('should accept a jquery object for an element', function() {
       analytics.trackForm(form);
       submit.click();
       assert(analytics.track.called);
@@ -1870,31 +1845,6 @@ describe('Analytics', function() {
       });
       analytics.trackForm(form);
       submit.click();
-    });
-
-    it('should trigger an existing jquery submit handler', function(done) {
-      var $form = jQuery(form);
-      $form.submit(function() {
-        done();
-      });
-      analytics.trackForm(form);
-      submit.click();
-    });
-
-    it('should track on a form submitted via jquery', function() {
-      var $form = jQuery(form);
-      analytics.trackForm(form);
-      $form.submit();
-      assert(analytics.track.called);
-    });
-
-    it('should trigger an existing jquery submit handler on a form submitted via jquery', function(done) {
-      var $form = jQuery(form);
-      $form.submit(function() {
-        done();
-      });
-      analytics.trackForm(form);
-      $form.submit();
     });
   });
 
