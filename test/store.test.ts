@@ -1,10 +1,10 @@
-import assert from 'proclaim'
-import { store } from '../lib/legacy'
+import assert from 'proclaim';
+import store from '../lib/entity/store/local';
 
 describe('store', function() {
   afterEach(function() {
     // reset to defaults
-    store.options = {}
+    store.options = {};
     store.remove('x');
   });
 
@@ -37,7 +37,7 @@ describe('store', function() {
 
   describe('#options', function() {
     it('should be able to save options', function() {
-      store.options = { enabled: false }
+      store.options = { enabled: false };
       assert(store.options.enabled === false);
       assert(store.enabled === false);
     });

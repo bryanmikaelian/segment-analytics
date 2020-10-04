@@ -3,8 +3,9 @@ import assignIn from 'lodash.assignin';
 
 import { Analytics } from '../../lib/analytics';
 import cookie from '../../lib/entity/store/cookie';
+import { default as s } from '../../lib/entity/store/local';
+import { default as m } from '../../lib/metrics';
 import { pageDefaults } from '../../lib/page';
-import { store as s, metrics as m } from '../../lib/legacy';
 import { User } from '../../lib/entity/user';
 import { Group } from '../../lib/entity/group';
 
@@ -855,18 +856,6 @@ describe('Analytics', function() {
         done();
       });
       analytics.page('category', 'name', {}, {});
-    });
-  });
-
-  describe('#pageview', function() {
-    beforeEach(function() {
-      analytics.initialize();
-      sinon.spy(analytics, 'page');
-    });
-
-    it('should call #page with a path', function() {
-      analytics.pageview('/path');
-      assert(analytics.page.calledWith({ path: '/path' }));
     });
   });
 

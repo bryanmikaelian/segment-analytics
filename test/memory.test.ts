@@ -1,5 +1,5 @@
-import assert from 'proclaim'
-import { memory } from '../lib/legacy'
+import assert from 'proclaim';
+import memory from '../lib/entity/store/memory'
 
 describe('memory', function() {
   afterEach(function() {

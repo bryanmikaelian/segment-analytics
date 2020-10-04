@@ -1,10 +1,7 @@
 import { IntegrationsSettings, InitOptions, SegmentAnalytics } from '../types';
 
 import { Analytics } from '../analytics';
-import cookie from '../entity/store/cookie';
 import { default as groupEntity } from '../entity/group';
-import store from '../entity/store/local';
-import memory from '../entity/store/memory';
 import metrics from '../metrics';
 
 /*
@@ -292,18 +289,6 @@ Analytics.prototype.trackSubmit = Analytics.prototype.trackForm = function(
 };
 
 /**
- * FIXME: BACKWARDS COMPATIBILITY: convert an old `pageview` to a `page` call.
- * @api private
- */
-
-Analytics.prototype.pageview = function(url: string): SegmentAnalytics {
-  const properties: { path?: string } = {};
-  if (url) properties.path = url;
-  this.page(properties);
-  return this;
-};
-
-/**
  * Call `method` with `facade` on all enabled integrations.
  *
  * @param {string} method
@@ -450,9 +435,3 @@ Analytics.prototype._invoke = function(
     });
   }
 };
-
-/*
- * Exports.
- */
-
-export { Analytics, cookie, memory, store, metrics };
