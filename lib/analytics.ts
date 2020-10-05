@@ -10,13 +10,6 @@ import { ParsedQuery } from 'query-string';
 
 import { version } from '../package.json';
 import {
-  InitOptions,
-  IntegrationsSettings,
-  SegmentAnalytics,
-  SegmentIntegration,
-  SegmentOpts
-} from './types';
-import {
   IntegrationMiddlewareChain,
   SourceMiddlewareChain
 } from './middleware';
@@ -30,11 +23,56 @@ import {
   Properties
 } from './messages';
 import { pageDefaults } from './page';
-import cookie from './entity/store/cookie';
 import metrics from './metrics';
-import store from './entity/store/local';
 
 type Callback = () => void;
+
+/**
+ * Collection of options that can be set when initializing Analytics
+ */
+interface InitializeOptions {
+  /**
+   * Triggers an initial page call after initializing.
+   */
+  initialPageview?: boolean;
+
+  /**
+   * Collection of integrations that are enabled or disabled.  By default,
+   * all integrations are enabled.
+   */
+  integrations?: IntegrationConfiguration;
+}
+
+type IntegrationName = string;
+type Integrations = Record<IntegrationName, IntegrationConstructor>;
+
+/**
+ * A generic integration constructor.  See analytics.js-integrations.
+ */
+interface IntegrationConstructor<
+  Options = Record<string, unknown>,
+  IntegrationClass extends Emitter = Integration
+> {
+  new (options: Options): IntegrationClass;
+}
+
+interface Integration extends Emitter {
+  name: string;
+  options: Record<string, unknown>;
+  page: () => void;
+  ready: () => void;
+  initialize: () => void;
+  analytics: Analytics;
+}
+
+/**
+ * Collection of Integrations that are either enabled or disabled.
+ * By default, all integrations are enabled.
+ */
+export interface IntegrationConfiguration {
+  All?: boolean;
+  [key: string]: boolean;
+}
 
 interface AnalyticsQueryString {
   ajs_uid?: string;
@@ -46,10 +84,8 @@ interface AnalyticsQueryString {
 export class Analytics extends Emitter {
   public readonly VERSION: string;
   public readonly log: Debugger;
-  public readonly Integrations: {
-    [name: string]: (options: SegmentOpts) => void;
-  };
-  public options: SegmentOpts;
+  public readonly Integrations: Integrations;
+  public initializeOptions: InitializeOptions;
   public readonly user = user;
 
   // TODO: Can these be private?
@@ -59,7 +95,7 @@ export class Analytics extends Emitter {
   private _sourceMiddlewares: unknown;
   private _integrationMiddlewares: unknown;
   private _destinationMiddlewares: unknown;
-  private _integrations: unknown;
+  private _integrations: Record<string, Integration>;
   private _readied: boolean;
   private _timeout: number;
   private _debug: Debug;
@@ -67,14 +103,14 @@ export class Analytics extends Emitter {
   // TODO: These functions are all prototyped in legacy/index.ts.  Eventually migrate them to here
 
   // Random util functions
-  addSourceMiddleware: (middleware: Function) => SegmentAnalytics;
-  addIntegrationMiddleware: (middleware: Function) => SegmentAnalytics;
+  addSourceMiddleware: (middleware: Function) => Analytics;
+  addIntegrationMiddleware: (middleware: Function) => Analytics;
   addDestinationMiddleware: (
     integrationName: string,
     middlewares: Array<unknown>
-  ) => SegmentAnalytics;
+  ) => Analytics;
 
-  _invoke: (method: string, facade: unknown) => SegmentAnalytics;
+  _invoke: (method: string, facade: unknown) => Analytics;
 
   constructor() {
     super();
@@ -103,14 +139,14 @@ export class Analytics extends Emitter {
    * /
 
   /**
-   * Initialize with the given integration `settings` and `options`.
+   * Initialize with the given integration `settings`
    *
    * Aliased to `init` for convenience.
    * @this {Analytics}
    */
   initialize(
-    settings?: IntegrationsSettings,
-    options?: InitOptions
+    settings?: IntegrationConfiguration,
+    options?: InitializeOptions
   ): Analytics {
     settings = settings || {};
     options = options || {};
@@ -275,9 +311,9 @@ export class Analytics extends Emitter {
     // Add the initialize integrations so the server-side ones can be disabled too
     // NOTE: We need to merge integrations, not override them with assign
     // since it is possible to change the initialized integrations at runtime.
-    if (this.options.integrations) {
+    if (this.initializeOptions.integrations) {
       msg.integrations = {
-        ...this.options.integrations,
+        ...this.initializeOptions.integrations,
         ...msg.integrations
       };
     }
@@ -343,9 +379,9 @@ export class Analytics extends Emitter {
     // Add the initialize integrations so the server-side ones can be disabled too
     // NOTE: We need to merge integrations, not override them with assign
     // since it is possible to change the initialized integrations at runtime.
-    if (this.options.integrations) {
+    if (this.initializeOptions.integrations) {
       msg.integrations = {
-        ...this.options.integrations,
+        ...this.initializeOptions.integrations,
         ...msg.integrations
       };
     }
@@ -385,11 +421,6 @@ export class Analytics extends Emitter {
       properties = null;
     }
 
-    // figure out if the event is archived.
-    let plan = this.options.plan || {};
-    const events = plan.track || {};
-    let planIntegrationOptions = {};
-
     // normalize
     const msg = this.normalize({
       properties: properties as Record<string, unknown> | null,
@@ -397,29 +428,11 @@ export class Analytics extends Emitter {
       event: event
     });
 
-    // plan.
-    plan = events[event];
-    if (plan) {
-      this.log('plan %o - %o', event, plan);
-      if (plan.enabled === false) {
-        // Disabled events should always be sent to Segment.
-        planIntegrationOptions = { All: false, 'Segment.io': true };
-      } else {
-        planIntegrationOptions = plan.integrations || {};
-      }
-    } else {
-      const defaultPlan = events.__default || { enabled: true };
-      if (!defaultPlan.enabled) {
-        // Disabled events should always be sent to Segment.
-        planIntegrationOptions = { All: false, 'Segment.io': true };
-      }
-    }
-
     // Add the initialize integrations so the server-side ones can be disabled too
     // NOTE: We need to merge integrations, not override them with assign
     // since it is possible to change the initialized integrations at runtime.
     msg.integrations = {
-      ...this._mergeInitializeAndPlanIntegrations(planIntegrationOptions),
+      ...this.initializeOptions.integrations,
       ...msg.integrations
     };
 
@@ -537,9 +550,9 @@ export class Analytics extends Emitter {
     // Add the initialize integrations so the server-side ones can be disabled too
     // NOTE: We need to merge integrations, not override them with assign
     // since it is possible to change the initialized integrations at runtime.
-    if (this.options.integrations) {
+    if (this.initializeOptions.integrations) {
       msg.integrations = {
-        ...this.options.integrations,
+        ...this.initializeOptions.integrations,
         ...msg.integrations
       };
     }
@@ -591,9 +604,9 @@ export class Analytics extends Emitter {
     // Add the initialize integrations so the server-side ones can be disabled too
     // NOTE: We need to merge integrations, not override them with assign
     // since it is possible to change the initialized integrations at runtime.
-    if (this.options.integrations) {
+    if (this.initializeOptions.integrations) {
       msg.integrations = {
-        ...this.options.integrations,
+        ...this.initializeOptions.integrations,
         ...msg.integrations
       };
     }
@@ -718,7 +731,7 @@ export class Analytics extends Emitter {
   /**
    * Add an integration.
    */
-  add(integration: { name: string | number }): Analytics {
+  add(integration: Integration): Analytics {
     this._integrations[integration.name] = integration;
     return this;
   }
@@ -726,7 +739,7 @@ export class Analytics extends Emitter {
   /**
    * Define a new `Integration`.
    */
-  addIntegration(Integration: (options: SegmentOpts) => void): Analytics {
+  addIntegration(Integration: IntegrationConstructor): Analytics {
     const name = Integration.prototype.name;
     if (!name) throw new TypeError('attempted to add an invalid integration');
     this.Integrations[name] = Integration;
@@ -860,50 +873,9 @@ export class Analytics extends Emitter {
   /**
    * Apply options.
    */
-  private _options(options: InitOptions): Analytics {
+  private _options(options: InitializeOptions): Analytics {
     options = options || {};
-    this.options = options;
-    cookie.options = options.cookie;
-    metrics.options(options.metrics);
-    store.options = options.localStorage;
-    this.user.options = options.user;
-    groupEntity.options = options.group;
+    this.initializeOptions = options;
     return this;
-  }
-
-  /**
-   * Merges the tracking plan and initialization integration options.
-   *
-   * @param  {Object} planIntegrations Tracking plan integrations.
-   * @return {Object}                  The merged integrations.
-   */
-  private _mergeInitializeAndPlanIntegrations(
-    planIntegrations: SegmentIntegration
-  ): SegmentIntegration {
-    // Do nothing if there are no initialization integrations
-    if (!this.options.integrations) {
-      return planIntegrations;
-    }
-
-    // Clone the initialization integrations
-    let integrations = extend({}, this.options.integrations);
-    let integrationName: string;
-
-    // Allow the tracking plan to disable integrations that were explicitly
-    // enabled on initialization
-    if (planIntegrations.All === false) {
-      integrations = { All: false };
-    }
-
-    for (integrationName in planIntegrations) {
-      if (planIntegrations.hasOwnProperty(integrationName)) {
-        // Don't allow the tracking plan to re-enable disabled integrations
-        if (this.options.integrations[integrationName] !== false) {
-          integrations[integrationName] = planIntegrations[integrationName];
-        }
-      }
-    }
-
-    return integrations;
   }
 }

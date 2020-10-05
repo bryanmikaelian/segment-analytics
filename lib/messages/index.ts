@@ -2,13 +2,14 @@ import includes from 'lodash.includes'
 import { default as d } from 'debug'
 import { v4 as uuid } from 'uuid'
 import SparkMD5 from 'spark-md5'
+import { IntegrationConfiguration } from '../analytics';
 
 const debug = d('analytics.js:normalize');
 const TOP_LEVEL_PROPERTIES = ['integrations', 'anonymousId', 'timestamp', 'context'];
 
 export interface Options {
   [key: string]: unknown;
-  integrations?: { [key: string]: string };
+  integrations?: IntegrationConfiguration;
   providers?: { [key: string]: string | boolean };
   context?: {
     [key: string]: unknown;
@@ -33,10 +34,7 @@ export interface NormalizedMessage {
   /**
    * The collection of integrations that will receive this message.
    */
-  integrations: {
-    All?: boolean
-    [key: string]: string | boolean;
-  };
+  integrations: IntegrationConfiguration
 
   /**
    * Context about this message.
@@ -88,7 +86,7 @@ export const normalize = (msg: Message, list: Array<string>): NormalizedMessage 
   Object.keys(opts).forEach(key => {
     if (!integration(key)) return;
     if (integrations[key] === undefined) {
-      integrations[key] = opts[key] as string;
+      integrations[key] = opts[key] as boolean;
     }
     delete opts[key];
   });
@@ -100,7 +98,7 @@ export const normalize = (msg: Message, list: Array<string>): NormalizedMessage 
     if (typeof integrations[key] === 'object') return;
     if (integrations[key] !== undefined && typeof providers[key] === 'boolean')
       return;
-    integrations[key] = providers[key] as string;
+    integrations[key] = providers[key] as boolean;
   });
 
   // move all toplevel options to msg

@@ -1,8 +1,5 @@
 export interface StoreOptions {
-  key?: string;
   enabled?: boolean;
-
-  [key: string]: unknown;
 }
 
 /**

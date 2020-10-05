@@ -506,44 +506,6 @@ describe('Analytics', function() {
     });
   });
 
-  describe('#_options', function() {
-    let stub;
-    beforeEach(function() {
-      sinon.stub(cookie, 'options');
-      sinon.stub(user, 'options');
-      stub = sinon.stub(metrics, 'options');
-    });
-
-    afterEach(function() {
-      sinon.restore();
-    });
-
-    it('should set cookie options', function() {
-      analytics._options({ cookie: { secure: true } });
-      assert(cookie.options.secure);
-    });
-
-    it('should set metrics options', function() {
-      analytics._options({ metrics: { option: true } });
-      assert(stub.calledWith({ option: true }));
-    });
-
-    it('should set store options', function() {
-      analytics._options({ localStorage: { option: true } });
-      assert(store.options.option);
-    });
-
-    it('should set user options', function() {
-      analytics._options({ user: { option: true } });
-      assert.deepEqual(user.options, { option: true });
-    });
-
-    it('should set group options', function() {
-      analytics._options({ group: { persist: false } });
-      assert(group.options.persist === false);
-    });
-  });
-
   describe('#_parseQuery', function() {
     describe('user settings', function() {
       beforeEach(function() {
@@ -1413,7 +1375,7 @@ describe('Analytics', function() {
         }
       });
       analytics.track('event', { prop: true });
-      var track = analytics._invoke.args[0][1];
+      const track = analytics._invoke.args[0][1];
       assert.deepEqual(track.obj.integrations, { Test: false });
     });
 
@@ -1436,177 +1398,11 @@ describe('Analytics', function() {
       assert.deepEqual(track.obj.integrations, { Test: true });
     });
 
-    it('should allow tracking plan to disable integrations explicitly enabled via initialize .integrations option', function() {
-      analytics.initialize(settings, {
-        integrations: {
-          All: false,
-          Test: true
-        },
-        plan: {
-          track: {
-            event1: { enabled: false },
-            event2: {
-              enabled: true,
-              integrations: { Test: false }
-            }
-          }
-        }
-      });
-
-      analytics.track('event1', { prop: true });
-      var track = analytics._invoke.args[0][1];
-      assert.deepEqual(track.obj.integrations, {
-        All: false,
-        'Segment.io': true
-      });
-
-      analytics.track('event2', { prop: true });
-      var track2 = analytics._invoke.args[1][1];
-      assert.deepEqual(track2.obj.integrations, { All: false, Test: false });
-    });
-
-    it('should prevent tracking plan from enabling integrations disabled via initialize .integrations option', function() {
-      analytics.initialize(settings, {
-        integrations: {
-          Test: false
-        },
-        plan: {
-          track: {
-            event1: { enabled: true },
-            event2: {
-              enabled: true,
-              integrations: { Test: true }
-            }
-          }
-        }
-      });
-
-      analytics.track('event1', { prop: true });
-      var track1 = analytics._invoke.args[0][1];
-      assert.deepEqual(track1.obj.integrations, { Test: false });
-
-      analytics.track('event2', { prop: true });
-      var track2 = analytics._invoke.args[1][1];
-      assert.deepEqual(track2.obj.integrations, { Test: false });
-    });
-
     it('should accept top level option .context', function() {
       var app = { name: 'segment' };
       analytics.track('event', { prop: true }, { context: { app: app } });
       var track = analytics._invoke.args[0][1];
       assert.deepEqual(app, track.obj.context.app);
-    });
-
-    it('should call #_invoke for Segment if the event is disabled', function() {
-      analytics.options.plan = {
-        track: {
-          event: { enabled: false }
-        }
-      };
-      analytics.track('event');
-      assert(analytics._invoke.called);
-      var track = analytics._invoke.args[0][1];
-      assert.deepEqual(
-        { All: false, 'Segment.io': true },
-        track.obj.integrations
-      );
-    });
-
-    it('should call #_invoke if the event is enabled', function() {
-      analytics.options.plan = {
-        track: {
-          event: { enabled: true }
-        }
-      };
-      analytics.track('event');
-      assert(analytics._invoke.called);
-    });
-
-    it('should call the callback even if the event is disabled', function(done) {
-      analytics.options.plan = {
-        track: {
-          event: { enabled: false }
-        }
-      };
-      assert(!analytics._invoke.called);
-      analytics.track('event', {}, {}, function() {
-        done();
-      });
-    });
-
-    it('should default .integrations to plan.integrations', function() {
-      analytics.options.plan = {
-        track: {
-          event: {
-            integrations: { All: true }
-          }
-        }
-      };
-
-      analytics.track('event', {}, { integrations: { Segment: true } });
-      var msg = analytics._invoke.args[0][1];
-      assert(msg.event() === 'event');
-      assert.deepEqual(msg.integrations(), { All: true, Segment: true });
-    });
-
-    it('should call #_invoke if new events are enabled', function() {
-      analytics.options.plan = {
-        track: {
-          __default: { enabled: true }
-        }
-      };
-      analytics.track('event');
-      assert(analytics._invoke.called);
-      var track = analytics._invoke.args[0][1];
-      assert.deepEqual({}, track.obj.integrations);
-    });
-
-    it('should call #_invoke for Segment if new events are disabled', function() {
-      analytics.options.plan = {
-        track: {
-          __default: { enabled: false }
-        }
-      };
-      analytics.track('even');
-      assert(analytics._invoke.called);
-      var track = analytics._invoke.args[0][1];
-      assert.deepEqual(
-        { All: false, 'Segment.io': true },
-        track.obj.integrations
-      );
-    });
-
-    it('should use the event plan if it exists and ignore defaults', function() {
-      analytics.options.plan = {
-        track: {
-          event: { enabled: true },
-          __default: { enabled: false }
-        }
-      };
-      analytics.track('event');
-      assert(analytics._invoke.called);
-      var track = analytics._invoke.args[0][1];
-      assert.deepEqual({}, track.obj.integrations);
-    });
-
-    it('should merge the event plan if it exists and ignore defaults', function() {
-      analytics.options.plan = {
-        track: {
-          event: { enabled: true, integrations: { Mixpanel: false } },
-          __default: { enabled: false }
-        }
-      };
-      analytics.track('event');
-      assert(analytics._invoke.called);
-      var track = analytics._invoke.args[0][1];
-      assert.deepEqual({ Mixpanel: false }, track.obj.integrations);
-    });
-
-    it('should not set ctx.integrations if plan.integrations is empty', function() {
-      analytics.options.plan = { track: { event: {} } };
-      analytics.track('event', {}, { campaign: {} });
-      var msg = analytics._invoke.args[0][1];
-      assert.deepEqual({}, msg.proxy('context.campaign'));
     });
 
     it('should include context.page', function() {
