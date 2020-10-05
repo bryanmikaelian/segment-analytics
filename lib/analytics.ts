@@ -878,4 +878,10 @@ export class Analytics extends Emitter {
     this.initializeOptions = options;
     return this;
   }
+
+  push(args: string[]) {
+    const method = args.shift();
+    if (!this[method]) return;
+    this[method].apply(this, args);
+  }
 }
