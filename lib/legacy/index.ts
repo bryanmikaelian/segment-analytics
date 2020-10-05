@@ -1,5 +1,3 @@
-import { SegmentAnalytics } from '../types';
-
 import { Analytics } from '../analytics';
 import metrics from '../metrics';
 
@@ -18,19 +16,20 @@ var extend = require('extend');
 
 Analytics.prototype.addSourceMiddleware = function(
   middleware: Function
-): SegmentAnalytics {
+): Analytics {
   this._sourceMiddlewares.add(middleware);
   return this;
 };
 
 /**
  * Define a new `IntegrationMiddleware`
+ * @this {Analytics}
  * @deprecated
  */
 
 Analytics.prototype.addIntegrationMiddleware = function(
   middleware: Function
-): SegmentAnalytics {
+): Analytics {
   this._integrationMiddlewares.add(middleware);
   return this;
 };
@@ -38,12 +37,13 @@ Analytics.prototype.addIntegrationMiddleware = function(
 /**
  * Define a new `DestinationMiddleware`
  * Destination Middleware is chained after integration middleware
+ * @this {Analytics}
  */
 
 Analytics.prototype.addDestinationMiddleware = function(
   integrationName: string,
   middlewares: Array<unknown>
-): SegmentAnalytics {
+): Analytics {
   var self = this;
   middlewares.forEach(function(middleware) {
     if (!self._destinationMiddlewares[integrationName]) {
@@ -64,11 +64,12 @@ Analytics.prototype.addDestinationMiddleware = function(
  * @param {Facade} facade
  * @return {Analytics}
  * @api private
+ * @this {Analytics}
  */
 Analytics.prototype._invoke = function(
   method: string,
   facade: unknown
-): SegmentAnalytics {
+): Analytics {
   var self = this;
 
   try {

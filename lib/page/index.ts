@@ -1,5 +1,12 @@
-import { PageDefaults } from '../types';
 import includes from 'lodash.includes';
+
+interface PageDefaults {
+  path: string;
+  referrer: string;
+  search: string;
+  title: string;
+  url: string;
+}
 
 /**
  * Return the canonical path for the page.
