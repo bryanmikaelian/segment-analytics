@@ -25,6 +25,8 @@ This project offers an almost-parity version with Segment's official `analytics.
 - Planning `track` events
 - The `trackClick` and `trackSubmit` aliases for `trackLink` and `trackForm`, respectively.
 - The `init` alias for `initialize`.
+- Specific logic for `jQuery` and `Zepto`
+- Cookie-based storage for User and Group traits
 
 As this library evolves over time, we will always respect the [Segment Spec](https://segment.com/docs/connections/spec/) and will avoid introducing breaking changes.  With each major release, you can expect a migration guide as well.
 
