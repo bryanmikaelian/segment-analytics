@@ -16,11 +16,27 @@ Long term, there also may be some unique features that will get added.
 
 Check out the [GitHub Project](https://github.com/bryanmikaelian/segment-analytics/projects/1) for the roadmap and the latest state of the project.  This code is to be considered in an alpha state, so use at your own risk till things are more stable.
 
-## This Project vs Segment's Official Library
+## What's changed
 
-This codebase is not designed to be a drop-in replacement for the [Analytics.js](https://github.com/segmentio/analytics.js) snippet. If there are specific things you are doing with `analytics.js`, it is suggested you continue to use that official snippet.  We will try to maintain parity but realize that things may diverge from `analytics.js`' behavior.
+### Parity with Segment's Analytics.JS
 
-Segment's `analytics.js` library is still the fastest way to get started with Segment and, in most cases, you probably don't need to use this library.  
+This project offers an almost-parity version with Segment's official `analytics.js` library.  If you are using Analytics.js in your single-page application, you can easily switch to this library.  Please note there are some features that did not get ported over.  Those items are:
+
+- Planning `track` events
+- The `trackClick` and `trackSubmit` aliases for `trackLink` and `trackForm`, respectively.
+- The `init` alias for `initialize`.
+
+As this library evolves over time, we will always respect the [Segment Spec](https://segment.com/docs/connections/spec/) and will avoid introducing breaking changes.  With each major release, you can expect a migration guide as well.
+
+### Client-side Destinations
+
+`analytics.js` will load _all_ client-side destinations and expose each library on `window`.  In this library, we are not doing that.  If you are using any client-side destinations, we recommend you install each each one individually.  See [analytics.js-integrations](https://github.com/segmentio/analytics.js-integrations) for more details
+
+The [Segment](https://github.com/segmentio/analytics.js-integrations/tree/master/integrations/segmentio) destination will be bundled by default.  You do not need to install this package. 
+
+## Getting started
+
+TBD
 
 ## Contributing
 
