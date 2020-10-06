@@ -28,6 +28,8 @@ This project offers an almost-parity version with Segment's official `analytics.
 
 As this library evolves over time, we will always respect the [Segment Spec](https://segment.com/docs/connections/spec/) and will avoid introducing breaking changes.  With each major release, you can expect a migration guide as well.
 
+It is expected that TypeScript-based projects might have some compiler errors after switching to this library.  These are accurate and you should update your code accordingly.  A significant amount of time has been invested to accurately portray the types, so you should treat them as truth.
+
 ### Client-side Destinations
 
 `analytics.js` will load _all_ client-side destinations and expose each library on `window`.  In this library, we are not doing that.  If you are using any client-side destinations, we recommend you install each each one individually.  See [analytics.js-integrations](https://github.com/segmentio/analytics.js-integrations) for more details
