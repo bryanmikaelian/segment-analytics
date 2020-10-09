@@ -1,4 +1,23 @@
-import Facade from 'segmentio-facade'
+import Facade from 'segmentio-facade';
+
+type RunFunction = () => void;
+type Callback = () => void;
+type MiddlewareFunction = (
+  run: RunFunction,
+  facade: unknown,
+  callback: Callback
+) => void;
+
+type ApplyMiddlewareFuncton = (
+  facade: unknown,
+  integration: string | Record<string, unknown>,
+  callback: (result: unknown) => void
+) => void;
+
+export interface Middleware {
+  add: (middleware: unknown) => MiddlewareFunction;
+  applyMiddlewares: ApplyMiddlewareFuncton;
+}
 
 export const SourceMiddlewareChain = function SourceMiddlewareChain() {
   var apply = middlewareChain(this);
@@ -77,7 +96,7 @@ export const middlewareChain = function middlewareChain(dest) {
     middlewaresToApply.push(callback);
     executeChain(run, facade, middlewaresToApply, 0);
   };
-}
+};
 
 // Go over all middlewares until all have been applied.
 function executeChain(run, payload, middlewares, index) {
