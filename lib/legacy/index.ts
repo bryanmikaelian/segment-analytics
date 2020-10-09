@@ -11,53 +11,6 @@ var DestinationMiddlewareChain = require('../middleware')
 var extend = require('extend');
 
 /**
- * Define a new `SourceMiddleware`
- */
-
-Analytics.prototype.addSourceMiddleware = function(
-  middleware: Function
-): Analytics {
-  this._sourceMiddlewares.add(middleware);
-  return this;
-};
-
-/**
- * Define a new `IntegrationMiddleware`
- * @this {Analytics}
- * @deprecated
- */
-
-Analytics.prototype.addIntegrationMiddleware = function(
-  middleware: Function
-): Analytics {
-  this._integrationMiddlewares.add(middleware);
-  return this;
-};
-
-/**
- * Define a new `DestinationMiddleware`
- * Destination Middleware is chained after integration middleware
- * @this {Analytics}
- */
-
-Analytics.prototype.addDestinationMiddleware = function(
-  integrationName: string,
-  middlewares: Array<unknown>
-): Analytics {
-  var self = this;
-  middlewares.forEach(function(middleware) {
-    if (!self._destinationMiddlewares[integrationName]) {
-      self._destinationMiddlewares[
-        integrationName
-      ] = new DestinationMiddlewareChain();
-    }
-
-    self._destinationMiddlewares[integrationName].add(middleware);
-  });
-  return self;
-};
-
-/**
  * Call `method` with `facade` on all enabled integrations.
  *
  * @param {string} method

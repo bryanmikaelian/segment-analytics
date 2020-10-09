@@ -11,7 +11,9 @@ import { ParsedQuery } from 'query-string';
 import { version } from '../package.json';
 import {
   IntegrationMiddlewareChain,
-  SourceMiddlewareChain
+  Middleware,
+  SourceMiddlewareChain,
+  DestinationMiddlewareChain
 } from './middleware';
 import user from './entity/user';
 import { default as groupEntity, Group as GroupEntity } from './entity/group';
@@ -63,6 +65,7 @@ interface Integration extends Emitter {
   ready: () => void;
   initialize: () => void;
   analytics: Analytics;
+  invoke: (...rest: unknown[]) => void;
 }
 
 /**
@@ -71,6 +74,7 @@ interface Integration extends Emitter {
  */
 export interface IntegrationConfiguration {
   All?: boolean;
+
   [key: string]: boolean;
 }
 
@@ -78,6 +82,7 @@ interface AnalyticsQueryString {
   ajs_uid?: string;
   ajs_aid?: string;
   ajs_event?: string;
+
   [key: string]: unknown;
 }
 
@@ -87,30 +92,19 @@ export class Analytics extends Emitter {
   public readonly Integrations: Integrations;
   public initializeOptions: InitializeOptions;
   public readonly user = user;
+  _invoke: (...rest: unknown[]) => void;
 
   // TODO: Can these be private?
   public initialized: boolean;
   public failedInitializations = [];
 
-  private _sourceMiddlewares: unknown;
-  private _integrationMiddlewares: unknown;
-  private _destinationMiddlewares: unknown;
+  private _sourceMiddlewares: Middleware;
+  private _integrationMiddlewares: Middleware;
+  private _destinationMiddlewares: Record<string, Middleware>;
   private _integrations: Record<string, Integration>;
   private _readied: boolean;
   private _timeout: number;
   private _debug: Debug;
-
-  // TODO: These functions are all prototyped in legacy/index.ts.  Eventually migrate them to here
-
-  // Random util functions
-  addSourceMiddleware: (middleware: Function) => Analytics;
-  addIntegrationMiddleware: (middleware: Function) => Analytics;
-  addDestinationMiddleware: (
-    integrationName: string,
-    middlewares: Array<unknown>
-  ) => Analytics;
-
-  _invoke: (method: string, facade: unknown) => Analytics;
 
   constructor() {
     super();
@@ -138,7 +132,7 @@ export class Analytics extends Emitter {
    * The initializer
    * /
 
-  /**
+   /**
    * Initialize with the given integration `settings`
    *
    * Aliased to `init` for convenience.
@@ -524,10 +518,7 @@ export class Analytics extends Emitter {
     //        In some cases, though, pageDefaults  will return defaults with values set to "" (such as `window.location.search` defaulting to "").
     //        The decision to not fix this bus was made to preserve backwards compatibility.
     const defs = pageDefaults();
-    properties = {
-      ...properties,
-      ...defs
-    };
+    properties = { ...properties, ...defs };
 
     // Mirror user overrides to `options.context.page` (but exclude custom properties)
     // (Any page defaults get applied in `this.normalize` for consistency.)
@@ -799,13 +790,11 @@ export class Analytics extends Emitter {
     msg.anonymousId = this.user.anonymousId();
 
     // Ensure all outgoing requests include page data in their contexts.
-    msg.context.page = {
-      ...pageDefaults(),
-      ...msg.context.page
-    };
+    msg.context.page = { ...pageDefaults(), ...msg.context.page };
 
     return msg;
   }
+
   /**
    * Set the user's `id`.
    */
@@ -867,6 +856,43 @@ export class Analytics extends Emitter {
       this.user.anonymousId(q.ajs_aid);
     }
 
+    return this;
+  }
+
+  /**
+   * Define a new `SourceMiddleware`
+   */
+  addSourceMiddleware(middleware: Function): Analytics {
+    this._sourceMiddlewares.add(middleware);
+    return this;
+  }
+
+  /**
+   * Define a new `IntegrationMiddleware`
+   * @deprecated
+   */
+  addIntegrationMiddleware(middleware: Function): Analytics {
+    this._integrationMiddlewares.add(middleware);
+    return this;
+  }
+
+  /**
+   * Define a new `DestinationMiddleware`
+   * Destination Middleware is chained after integration middleware
+   */
+  addDestinationMiddleware(
+    integrationName: string,
+    middlewares: Array<Middleware>
+  ): Analytics {
+    middlewares.forEach(middleware => {
+      if (!this._destinationMiddlewares[integrationName]) {
+        this._destinationMiddlewares[
+          integrationName
+        ] = new DestinationMiddlewareChain();
+      }
+
+      this._destinationMiddlewares[integrationName].add(middleware);
+    });
     return this;
   }
 
