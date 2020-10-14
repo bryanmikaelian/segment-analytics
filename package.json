@@ -1,7 +1,7 @@
 {
   "name": "segment-analytics",
   "author": "Bryan Mikaelian <bryan@iceblock.tech>",
-  "version": "1.0.0",
+  "version": "1.0.0-alpha.0",
   "description": "An enhanced version of Analytics.js.",
   "types": "dist/index.d.ts",
   "keywords": [
